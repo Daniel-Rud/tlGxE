@@ -1,0 +1,215 @@
+compute_gesso = function(outcome_data, train_ids, test_ids, weights, args_list)
+{
+  # gesso does not have implentation with weights!!! So we do not use...
+  
+  Y =  outcome_data[train_ids, 1]
+  A = outcome_data[train_ids, 2]
+  X = outcome_data[train_ids, -c(1:2)] %>% as.matrix
+  
+  new_A = outcome_data[test_ids, 2]
+  new_X = outcome_data[test_ids, -c(1:2)] %>% as.matrix
+  
+  nfolds = args_list$nfolds_cv_glmnet
+  family = "binomial" # note that we call function binomial (not 'binomial') for cv.glmnet
+  
+  
+  Q0_mod = gesso.cv(G = X, E = A, Y = Y, 
+                    family = family, parallel = F, 
+                    verbose = F, 
+                    nfolds = nfolds)
+  
+  coefficients = gesso.coef(Q0_mod$fit, Q0_mod$lambda_min)
+  
+  beta_0 = coefficients$beta_0; beta_e = coefficients$beta_e                   
+  beta_g = coefficients$beta_g; beta_gxe = coefficients$beta_gxe
+  
+  Q0AW = gesso.predict(beta_0, beta_e, beta_g, beta_gxe, 
+                       new_G = new_X, new_E = new_A, family = family)
+  Q1W = gesso.predict(beta_0, beta_e, beta_g, beta_gxe, 
+                      new_G = new_X, new_E = rep(1, nrow(new_X)), family = family)
+  Q0W = gesso.predict(beta_0, beta_e, beta_g, beta_gxe, 
+                      new_G = new_X, new_E = rep(0, nrow(new_X)), family = family)
+  
+  return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
+  return(return_list)
+}
+
+# compute_glm_interaction = function(data, family)
+# {
+#   formula = paste("Y ~ ", paste0("A*", colnames(outcome_data)[-c(1:2)], collapse = " + ")) %>% formula
+#   Q0_mod = glm(formula = formula, family = family, data = outcome_data)
+# 
+#   Q0AW = predict(Q0_mod, newdata = outcome_data, type = "response")
+#   Q1W = predict(Q0_mod, newdata = cbind(A = rep(1, nrow(outcome_data)), outcome_data[,-c(1:2)]), type = "response")
+#   Q0W = predict(Q0_mod, newdata =  cbind(A = rep(0, nrow(outcome_data)), outcome_data[,-c(1:2)]), type = "response")
+#   return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
+#   return(return_list)
+# }
+
+
+compute_logistf = function(outcome_data, train_ids, test_ids, weights, args_list)
+{
+  
+  Q0_mod = logistf(formula = Y ~ ., data = outcome_data[train_ids, ], 
+                   weights = weights[train_ids])
+  
+  Q0AW = predict(Q0_mod, newdata = outcome_data[test_ids, ], type = "response")
+  Q1W = predict(Q0_mod, newdata = cbind(A = rep(1, length(test_ids)), outcome_data[test_ids,-c(1:2)]), type = "response")
+  Q0W = predict(Q0_mod, newdata =  cbind(A = rep(0, length(test_ids)), outcome_data[test_ids,-c(1:2)]), type = "response")
+  return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
+  return(return_list)
+}
+
+compute_glmnet_interaction = function(outcome_data, train_ids, test_ids, weights,  args_list)
+{
+  family = args_list$family
+  alpha = args_list$alpha 
+  nfolds = args_list$nfolds_cv_glmnet
+  type.measure = args_list$type.measure
+  lambda =  args_list$lambda
+  
+  glm_model_matrix_train = cbind(outcome_data[train_ids, ], 
+                                 outcome_data[train_ids, -c(1:2)] * outcome_data[train_ids,2])
+  colnames(glm_model_matrix_train) = c("Y", "A",  c(colnames(outcome_data)[-c(1:2)], 
+                                                    paste0("A*", colnames(outcome_data)[-c(1:2)])))
+  
+  glm_model_matrix_test = cbind(outcome_data[test_ids, ], 
+                                outcome_data[test_ids, -c(1:2)] * outcome_data[test_ids,2])
+  colnames(glm_model_matrix_test) = c("Y", "A",  c(colnames(outcome_data)[-c(1:2)], 
+                                                   paste0("A*", colnames(outcome_data)[-c(1:2)])))
+  
+  glm_model_matrix1 = cbind(outcome_data[test_ids, ], outcome_data[test_ids, -c(1:2)] )
+  glm_model_matrix1[,2] = 1
+  colnames(glm_model_matrix1) = c("Y", "A",  c(colnames(outcome_data)[-c(1:2)], paste0("A*", colnames(outcome_data)[-c(1:2)])))
+  
+  glm_model_matrix0 = cbind(outcome_data[test_ids, ], 
+                            matrix(0, nrow = length(test_ids), ncol = ncol(outcome_data) - 2))
+  glm_model_matrix0[,2] = 0
+  colnames(glm_model_matrix0) = c("Y", "A",  c(colnames(outcome_data)[-c(1:2)], paste0("A*", colnames(outcome_data)[-c(1:2)])))
+  
+  Q0_mod = cv.glmnet(y = glm_model_matrix_train[,1], x = as.matrix(glm_model_matrix_train[,-1]),
+                     family = family,
+                     weights = weights[train_ids],
+                     alpha = alpha,
+                     nfolds = nfolds,
+                     type.measure = type.measure)
+  
+  s = Q0_mod$lambda.1se
+  if(lambda == "lambda.min")
+  {
+    s = Q0_mod$lambda.min
+  }
+  
+  Q0AW = predict(Q0_mod, newx = glm_model_matrix_test[,-1] %>% as.matrix, type = "response", s = s)
+  Q1W = predict(Q0_mod, newx = glm_model_matrix1[,-1]%>% as.matrix, type = "response", s = s)
+  Q0W = predict(Q0_mod, newx = glm_model_matrix0[,-1]%>% as.matrix, type = "response", s = s)
+  return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
+  return(return_list)
+}
+
+compute_glmnet = function(outcome_data, train_ids, test_ids, weights, args_list)
+{
+  family = args_list$family
+  alpha = args_list$alpha 
+  nfolds = args_list$nfolds_cv_glmnet
+  type.measure = args_list$type.measure
+  lambda =  args_list$lambda
+  
+  X = as.matrix(outcome_data[train_ids,-1])
+  X_test = as.matrix(outcome_data[test_ids,-1])
+  
+  Q0_mod = cv.glmnet(y = outcome_data$Y[train_ids], x = X,
+                     family = family,
+                     weights = weights[train_ids],
+                     alpha = alpha,
+                     nfolds = nfolds,
+                     type.measure = type.measure)
+  
+  s = Q0_mod$lambda.1se
+  if(lambda == "lambda.min")
+  {
+    s = Q0_mod$lambda.min
+  }
+  
+  Q0AW = predict(Q0_mod, newx = X_test, type = "response", s = s )
+  Q1W = predict(Q0_mod, newx = cbind(rep(1, nrow(X_test)), X_test[,-1]), type = "response", s = s)
+  Q0W = predict(Q0_mod, newx = cbind(rep(0, nrow(X_test)), X_test[,-1]), type = "response", s = s)
+  return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
+  return(return_list)
+}
+
+
+# if no CV, set nfolds_cv_Q_init = 1
+generate_Q0_cv = function(outcome_data, family, weights, alpha = 0.5, lambda = "lambda.1se",
+                          nfolds_cv_Q_init = 10, nfolds_cv_glmnet = 3, 
+                          outcome_method = c("glmnet_int", "glmnet", "gesso"), 
+                          type.measure = "deviance")
+{
+  # initialize CV splits 
+  
+  # use factor call for stratified CV 
+  folds = NULL
+  if(family == "gaussian") # do not create splits based on factor
+  {
+    folds = caret::createFolds(outcome_data$Y, k = nfolds_cv_Q_init)
+  }else
+  {
+    folds = caret::createFolds(outcome_data$Y %>% factor, k = nfolds_cv_Q_init) 
+  }
+  
+  # since we use logistic fluctuation, family is always binomial
+  # note that we use `binomial` and not `"binomial"`, the former works and the 
+  # latter does not with a bounded continuous outcome in (0,1), I think cause it 
+  # calls binomial function in R and the other might be an implementation in glmnet
+  
+  family = binomial
+  
+  args_list = list(family = family, 
+                   alpha = alpha, 
+                   lambda = lambda, 
+                   nfolds_cv_glmnet = nfolds_cv_glmnet, 
+                   type.measure = type.measure)
+  
+  outcome_function = switch(outcome_method, 
+                            glmnet_int = compute_glmnet_interaction, 
+                            glmnet = compute_glmnet, 
+                            gesso = compute_gesso, 
+                            logistf = compute_logistf
+  )
+  
+  results = lapply(1:length(folds), FUN = function(i)
+  {
+    
+    train_ids = (1:nrow(outcome_data))[-folds[[i]]]
+    test_ids = folds[[i]]
+    if(nfolds_cv_Q_init == 1)
+    {
+      train_ids = test_ids
+    }
+    
+    return_list = outcome_function(outcome_data = outcome_data, train_ids = train_ids, 
+                                   test_ids = test_ids, weights = weights, 
+                                   args_list = args_list)
+    
+    return(return_list)
+    
+  })
+  
+  # put predictions in order 
+  
+  fold_ids = do.call(c, folds)
+  order_obs = order(fold_ids)
+  
+  Q0AW = do.call(c, lapply(results, "[[", 1) )
+  Q0AW = Q0AW[order_obs]
+  
+  Q1W = do.call(c, lapply(results, "[[", 2))
+  Q1W = Q1W[order_obs]
+  
+  Q0W = do.call(c, lapply(results, "[[", 3))
+  Q0W = Q0W[order_obs]
+  
+  return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
+  
+  return(return_list)
+}

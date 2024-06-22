@@ -34,7 +34,8 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
                 nfolds_cv_glmnet_propensity = 3, 
                 nfolds_cv_glmnet_outcome = 3, 
                 alpha_outcome = .5, alpha_propensity = .5, 
-                clever_cov_propensity_wt = T)
+                clever_cov_propensity_wt = T, 
+                propensity_SL.library = c("SL.glmnet"))
 {
   
   # match args 
@@ -101,17 +102,17 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
   #         near positivity violators
   
   PS = NULL
-  if(!is.null(propensity_scores))
+  if(!is.null(propensity_scores)) # if propensity scores provided to function 
   {
     PS = propensity_scores
-  }else
+  }else # otherwise compute propensity scores 
   {
-    PS = generate_propensity(exposure_data = exposure_data, 
-                             alpha = alpha_propensity, 
-                             nfolds_cv_glmnet = nfolds_cv_glmnet_propensity, 
-                             weights = weights)
+    PS = generate_propensity_SL(exposure_data = exposure_data, 
+                                               weights = weights, 
+                                               SL.library = propensity_SL.library, 
+                                               parallel = F, 
+                                               ncores = NULL) 
   }
-  
   
   # trimming and rebound is only for lower endpoints 
   # this is because propensity is in denominator, low 

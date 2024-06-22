@@ -15,6 +15,7 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
                                                    shuffle = TRUE, 
                                                    validRows = NULL), 
                     include_G_propensity = T,
+                    include_W_outcome = T, 
                     TMLE_args_list = list(
                       outcome_method = c("glmnet_int", "glmnet", "gesso", "logistf"),
                       npv_thresh = (5/sqrt(length(Y)))/log(length(Y)),
@@ -38,31 +39,18 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
   num_G = ncol(G)
   num_G = ifelse(!is.null(num_G),num_G, length(G))
   
-  # set up confounding frames W_outcome and W_exposure
-  # only need to worry if W is specified
   
+  # set up W_propensity for propensity model 
+  W_propensity = W
   if(include_G_propensity)
   {
-    if(is.null(W))
+    if(is.null(W_propensity))
     {
-      W = G
+      W_propensity = G
     }else
     {
-      W = cbind(W, G) 
+      W_propensity = cbind(W_propensity, G) 
     }
-  }
-  
-  # initialize progressor
-  p <- NULL
-  if(progress == T)
-  {
-    p <- progressor(steps = num_G)
-  }
-  
-  
-  if(verbose == T)
-  {
-    message("Fitting Propensity model using Super Learner...")
   }
   
   # initialize observation weights 
@@ -71,38 +59,124 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
   {
     outcome_table = table(Y)
     J = outcome_table[1] / outcome_table[2]
+    
     # weight will be q0 for Y = 1 (cases) and (1-q0)*(1/J) for Y = 0 (controls)
+    # where q0 is the disease prevalence
     weights = Y*disease_prevalence  + (1-Y)*(1 - disease_prevalence)*(1/J)
     
   }else if (case_control_design && !is.null(weights)) # if case control study AND user weights specified
   {
     if(verbose)
     {
-      message("Using prescpecified weights for case control design specified.  \nTo use default case control weights, set `weights = NULL`.")
+      message("Using prespecified weights for case control design specified.  \nTo use default case control weights, set `weights = NULL`.")
     }
-  }else
+  }else if(!is.null(weights))
+  {
+    if(verbose)
+    {
+      message("Using prespecified weights.")
+    }
+    
+  }else # if weights are not prespecified and not case control design
   {
     weights[1:length(weights)] = 1
   }
+  #########################################################################
+  # Fit overall propensity model ##########################################
+  #########################################################################
+  if(verbose == T)
+  {
+    message("Fitting Propensity model using Super Learner...")
+  }
   
-  # fit overall propensity model 
-  
-  propensity_scores = generate_propensity_SL(exposure_data = data.frame(if(is.null(W)){A}else{cbind(A, W)}), 
+  propensity_scores = generate_propensity_SL(exposure_data = data.frame(if(is.null(W_propensity)){A}else{cbind(A, W_propensity)}), 
                                              weights = weights, 
-                                             SL.library = SL.library, 
-                                             SL.cvControl = SL.cvControl, 
+                                             SL.library = propensity_SL.library, 
+                                             SL.cvControl = propensity_SL.cvControl, 
                                              parallel = parallel, 
                                              ncores = ncores) 
+  #########################################################################
+  # Perform TMLE EM analysis for each SNP as an effect modifier ###########
+  #########################################################################
+  tmle_results = NULL
   
-  # include propensity scored in TMLE effect mod 
+  plan(multisession, workers = ncores)
   
-  plan(multisession, workers = cores)
+  if(progress == T)
+  {
+    with_progress(tmle_results <- tmle_EM_iterator(Y = Y, 
+                                                   A = A,
+                                                   G = G, 
+                                                   W = W,
+                                                   propensity_scores = propensity_scores, 
+                                                   family = family,
+                                                   case_control_design = case_control_design, 
+                                                   disease_prevalence = disease_prevalence,
+                                                   weights = weights,  
+                                                   include_W_outcome = include_W_outcome, 
+                                                   TMLE_args_list = TMLE_args_list, 
+                                                   progress = progress))
+  }else
+  {
+    tmle_results <- tmle_EM_iterator(Y = Y, 
+                                     A = A,
+                                     G = G, 
+                                     W = W,
+                                     propensity_scores = propensity_scores, family = family,
+                                     case_control_design = case_control_design, disease_prevalence = disease_prevalence,
+                                     weights = weights,  
+                                     include_W_outcome = include_W_outcome, 
+                                     TMLE_args_list = TMLE_args_list, 
+                                     progress = progress)
+  }
   
-  tmle_results = future_lapply(1:num_G, FUN = function(i)
+  
+  result_frame = do.call(cbind, tmle_results)
+  colnames(result_frame) = if(is.null(colnames(G))){paste0("SNP", 1:G)}else{colnames(G)}
+  
+  class(result_frame) = "tmle_gxe"
+  
+  return(result_frame)
+}
+
+tmle_EM_iterator = function(Y, A, G, W = NULL,propensity_scores = NULL, family = "binomial",
+                            case_control_design = F, disease_prevalence = NULL,
+                            weights = NULL,  
+                            include_W_outcome = T, 
+                            TMLE_args_list = list(
+                              outcome_method = c("glmnet_int", "glmnet", "gesso", "logistf"),
+                              npv_thresh = (5/sqrt(length(Y)))/log(length(Y)),
+                              near_positivity_method = c("trim", "rebound"),
+                              nfolds_cv_Q_init = 1,
+                              nfolds_cv_glmnet_propensity = 3,
+                              nfolds_cv_glmnet_outcome = 3,
+                              alpha_outcome = .5,
+                              alpha_propensity = .5,
+                              clever_cov_propensity_wt = T), 
+                            progress = T)
+{
+  
+  p <- NULL
+  if(progress)
+  {
+    p <- progressor(steps = num_G)
+  }
+
+  tmle_results = future_lapply(1:ncol(G), FUN = function(i)
   {
     
-    W_outcome_curr = if(!is.null(W_outcome)){cbind(G[,-i], W_outcome)}else{G[,-i]}
-    W_exposure_curr = if(!is.null(W_outcome)){cbind(G[,-i], W_exposure)}else{G[,-i]}
+    W_outcome_curr = NULL
+    # W_exposure_curr is set to NULL since propensity model is done for all data in beginning.
+    # We pass the propensities to TMLE
+    W_exposure_curr = NULL
+    
+    if(include_W_outcome && !is.null(W))
+    {
+      W_outcome_curr = cbind(G[,-i], W)
+    }else
+    {
+      W_outcome_curr = G[,-i]
+    }
     
     effect_modifier = G[,i]
     
@@ -117,23 +191,15 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
                                disease_prevalence = disease_prevalence,
                                weights = weights,
                                TMLE_args_list = TMLE_args_list)
-    if(progress == T)
+    if(progress)
     {
       p()
     }
     
     return(tmle_mod)
-    
-  }, future.seed = T)
+  }, future.seed = 2024)
   
-  plan(sequential)
-  
-  result_frame = do.call(cbind, tmle_results)
-  colnames(result_frame) = if(is.null(colnames(G))){paste0("SNP", 1:G)}else{colnames(G)}
-  
-  class(result_frame) = "tmle_gxe"
-  
-  return(result_frame)
+  return(tmle_results)
 }
 
 

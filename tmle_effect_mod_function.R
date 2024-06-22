@@ -58,7 +58,7 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  family = family, 
                  case_control_design = case_control_design, 
                  disease_prevalence = disease_prevalence,
-                 propensity_scores = propensity_scores,
+                 propensity_scores = propensity_scores[E0_indices],
                  weights = weights[E0_indices],
                  outcome_method = outcome_method, 
                  npv_thresh = npv_thresh, 
@@ -75,7 +75,7 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  W_exposure = if(is.null(W_exposure)){NULL}else{data.frame(W_exposure)[E1_indices, ]}, 
                  family = family, 
                  case_control_design = case_control_design, 
-                 propensity_scores = propensity_scores,
+                 propensity_scores = propensity_scores[E1_indices],
                  weights = weights[E1_indices],
                  disease_prevalence = disease_prevalence,
                  outcome_method = outcome_method, 
@@ -94,7 +94,7 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  family = family, 
                  case_control_design = case_control_design, 
                  disease_prevalence = disease_prevalence,
-                 propensity_scores = propensity_scores,
+                 propensity_scores = propensity_scores[E2_indices],
                  weights = weights[E2_indices],
                  outcome_method = outcome_method, 
                  npv_thresh = npv_thresh, 
@@ -138,26 +138,6 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
   ATE_EM_F_statistic = MSB / MSW
   
   ATE_EM_pvalue = pf(ATE_EM_F_statistic, df1 = 3 - 1,sum(n_vec) - 3 , lower.tail = F)
-  
-  ########################################
-  
-  # Setup for Welch Unequal Variance ANOVA ######
-  
-  # w = n_vec / var_vec
-  # 
-  # w_sum = sum(w)
-  # 
-  # xbar_grand = as.numeric((w %*% xbar_vec) / w_sum)
-  # 
-  # F_numerator = (1/(3-1)) * w %*% (xbar_vec - xbar_grand)^2
-  # 
-  # F_denom = 1 + 2*((3-2) / (3^2 - 1)) * (1 / (n_vec - 1)) %*% (1 - (w / w_sum))^2
-  # 
-  # df2 = (3^2 - 1) / (3* (1 / (n_vec - 1)) %*% (1 - w / w_sum))
-  # 
-  # ATE_EM_F_statistic = F_numerator / F_denom
-  # 
-  # ATE_EM_pvalue = pf(ATE_EM_F_statistic, df1 = 3 - 1, df2, lower.tail = F)
   
   # Perform anova for MOR results 
   

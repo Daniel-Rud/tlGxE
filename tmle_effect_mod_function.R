@@ -1,6 +1,6 @@
 
 
-source("/Users/danielrud/Desktop/USC/Targeted Learning/TMLE_function/tmle_main_function.R")
+source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_main_function.R")
 
 # function for effect modification
 # effect_modifier should be a numeric 0 1 variable 
@@ -51,7 +51,6 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
   E1_indices = which(effect_modifier == 1)
   E2_indices = which(effect_modifier == 2)
   
-  
   tmle_E0 = TMLE(Y = Y[E0_indices], A = A[E0_indices], 
                  W_outcome = if(is.null(W_outcome)){NULL}else{data.frame(W_outcome)[E0_indices, ]}, 
                  W_exposure = if(is.null(W_exposure)){NULL}else{data.frame(W_exposure)[E0_indices, ]}, 
@@ -88,14 +87,29 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  alpha_propensity = alpha_propensity, 
                  clever_cov_propensity_wt = clever_cov_propensity_wt)
   
+    #  obsWeights = Y[E1_indices]*A_prop_int_effects$disease_prev  + 
+    #   (1-Y[E1_indices])*(1 - A_prop_int_effects$disease_prev)*(1/(table(Y[E1_indices])[1] / table(Y[E1_indices])[2]))
+    # 
+    # tmle_pkg = tmle(
+    #   Y = Y[E1_indices],
+    #   A = A[E1_indices],
+    #   W = data.frame(W_outcome)[E1_indices, ],
+    #   Q.SL.library = c("SL.glmnet"),
+    #   g.SL.library = c("SL.glmnet"),
+    #   cvQinit = F, 
+    #   family = "binomial",
+    #   obsWeights = obsWeights)
+  
+  
+  
   tmle_E2 = TMLE(Y = Y[E2_indices], A = A[E2_indices], 
                  W_outcome = if(is.null(W_outcome)){NULL}else{data.frame(W_outcome)[E2_indices, ]}, 
                  W_exposure = if(is.null(W_exposure)){NULL}else{data.frame(W_exposure)[E2_indices, ]}, 
                  family = family, 
-                 case_control_design = case_control_design, 
-                 disease_prevalence = disease_prevalence,
+                 case_control_design = case_control_design,
                  propensity_scores = propensity_scores[E2_indices],
-                 weights = weights[E2_indices],
+                 weights = weights[E2_indices], 
+                 disease_prevalence = disease_prevalence,
                  outcome_method = outcome_method, 
                  npv_thresh = npv_thresh, 
                  near_positivity_method = near_positivity_method, 
@@ -105,7 +119,6 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  alpha_outcome = alpha_outcome,
                  alpha_propensity = alpha_propensity, 
                  clever_cov_propensity_wt = clever_cov_propensity_wt)
-  
   
   
   

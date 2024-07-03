@@ -1,6 +1,9 @@
 
-source("/Users/danielrud/Desktop/USC/Targeted Learning/TMLE_function/tmle_effect_mod_function.R")
-source("/Users/danielrud/Desktop/USC/Targeted Learning/TMLE_function/tmle_gxe_post_process.R")
+source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_effect_mod_function.R")
+source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_gxe_post_process.R")
+source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_helper_functions.R")
+source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_propensity_model_functions.R")
+source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_outcome_model_functions.R")
 
 tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
                     case_control_design = F, disease_prevalence = NULL,
@@ -54,7 +57,7 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
   }
   
   # initialize observation weights 
-  weights = numeric(length(Y))
+
   if(case_control_design && is.null(weights)) # if case control design and weights not specified 
   {
     outcome_table = table(Y)
@@ -79,7 +82,7 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
     
   }else # if weights are not prespecified and not case control design
   {
-    weights[1:length(weights)] = 1
+    weights = rep(1, length(Y))
   }
   #########################################################################
   # Fit overall propensity model ##########################################
@@ -95,12 +98,11 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
                                              SL.cvControl = propensity_SL.cvControl, 
                                              parallel = parallel, 
                                              ncores = ncores) 
+  
   #########################################################################
   # Perform TMLE EM analysis for each SNP as an effect modifier ###########
   #########################################################################
   tmle_results = NULL
-  
-  plan(multisession, workers = ncores)
   
   if(progress == T)
   {
@@ -115,7 +117,9 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
                                                    weights = weights,  
                                                    include_W_outcome = include_W_outcome, 
                                                    TMLE_args_list = TMLE_args_list, 
-                                                   progress = progress))
+                                                   progress = progress, 
+                                                   parallel = parallel, 
+                                                   ncores = ncores))
   }else
   {
     tmle_results <- tmle_EM_iterator(Y = Y, 
@@ -127,7 +131,9 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
                                      weights = weights,  
                                      include_W_outcome = include_W_outcome, 
                                      TMLE_args_list = TMLE_args_list, 
-                                     progress = progress)
+                                     progress = progress, 
+                                     parallel = parallel, 
+                                     ncores = ncores)
   }
   
   
@@ -153,51 +159,103 @@ tmle_EM_iterator = function(Y, A, G, W = NULL,propensity_scores = NULL, family =
                               alpha_outcome = .5,
                               alpha_propensity = .5,
                               clever_cov_propensity_wt = T), 
-                            progress = T)
+                            progress = T, 
+                            parallel = T, 
+                            ncores = availableCores())
 {
   
   p <- NULL
+  num_G = ncol(G)
   if(progress)
   {
     p <- progressor(steps = num_G)
   }
+  
+  tmle_results = NULL
 
-  tmle_results = future_lapply(1:ncol(G), FUN = function(i)
+  if(parallel)
   {
-    
-    W_outcome_curr = NULL
-    # W_exposure_curr is set to NULL since propensity model is done for all data in beginning.
-    # We pass the propensities to TMLE
-    W_exposure_curr = NULL
-    
-    if(include_W_outcome && !is.null(W))
+    plan(multisession, workers = ncores)
+
+    tmle_results = future_lapply(1:num_G, FUN = function(i)
     {
-      W_outcome_curr = cbind(G[,-i], W)
-    }else
+
+      W_outcome_curr = NULL
+      # W_exposure_curr is set to NULL since propensity model is done for all data in beginning.
+      # We pass the propensities to TMLE
+      W_exposure_curr = NULL
+
+      if(include_W_outcome && !is.null(W))
+      {
+        W_outcome_curr = cbind(G[,-i], W)
+      }else
+      {
+        W_outcome_curr = G[,-i]
+      }
+
+      effect_modifier = G[,i]
+
+      tmle_mod = TMLE_effect_mod(Y = Y,
+                                 A = A,
+                                 effect_modifier = effect_modifier,
+                                 W_outcome = W_outcome_curr,
+                                 W_exposure = W_exposure_curr,
+                                 family = family,
+                                 propensity_scores = propensity_scores,
+                                 case_control_design = case_control_design,
+                                 disease_prevalence = disease_prevalence,
+                                 weights = weights,
+                                 TMLE_args_list = TMLE_args_list)
+      if(progress)
+      {
+        p()
+      }
+
+      return(tmle_mod)
+    }, future.seed = 2024, future.envir = parent.frame(n = 2))
+
+    plan(sequential)
+  }else
+  {
+    tmle_results = lapply(1:num_G, FUN = function(i)
     {
-      W_outcome_curr = G[,-i]
-    }
-    
-    effect_modifier = G[,i]
-    
-    tmle_mod = TMLE_effect_mod(Y = Y,
-                               A = A,
-                               effect_modifier = effect_modifier,
-                               W_outcome = W_outcome_curr,
-                               W_exposure = W_exposure_curr,
-                               family = family,
-                               propensity_scores = propensity_scores, 
-                               case_control_design = case_control_design,
-                               disease_prevalence = disease_prevalence,
-                               weights = weights,
-                               TMLE_args_list = TMLE_args_list)
-    if(progress)
-    {
-      p()
-    }
-    
-    return(tmle_mod)
-  }, future.seed = 2024)
+
+      W_outcome_curr = NULL
+      # W_exposure_curr is set to NULL since propensity model is done for all data in beginning.
+      # We pass the propensities to TMLE
+      W_exposure_curr = NULL
+
+      if(include_W_outcome && !is.null(W))
+      {
+        W_outcome_curr = cbind(G[,-i], W)
+      }else
+      {
+        W_outcome_curr = G[,-i]
+      }
+
+      effect_modifier = G[,i]
+
+      tmle_mod = TMLE_effect_mod(Y = Y,
+                                 A = A,
+                                 effect_modifier = effect_modifier,
+                                 W_outcome = W_outcome_curr,
+                                 W_exposure = W_exposure_curr,
+                                 family = family,
+                                 propensity_scores = propensity_scores,
+                                 case_control_design = case_control_design,
+                                 disease_prevalence = disease_prevalence,
+                                 weights = weights,
+                                 TMLE_args_list = TMLE_args_list)
+      if(progress)
+      {
+        p()
+      }
+
+      return(tmle_mod)
+    })
+  }
+
+  
   
   return(tmle_results)
 }

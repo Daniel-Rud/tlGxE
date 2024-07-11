@@ -4,10 +4,12 @@ source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_gxe_post_proce
 source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_helper_functions.R")
 source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_propensity_model_functions.R")
 source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_outcome_model_functions.R")
+source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_main_function.R")
 
 tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
                     case_control_design = F, disease_prevalence = NULL,
                     weights = NULL, 
+                    
                     propensity_SL.library = c("SL.gam", 
                                               "SL.glm.interaction", 
                                               "SL.glmnet", 
@@ -40,7 +42,7 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
   
   # account for when only including a single G
   num_G = ncol(G)
-  num_G = ifelse(!is.null(num_G),num_G, length(G))
+  num_G = ifelse(!is.null(num_G),num_G, 1)
   
   
   # set up W_propensity for propensity model 
@@ -138,7 +140,10 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
   
   
   result_frame = do.call(cbind, tmle_results)
-  colnames(result_frame) = if(is.null(colnames(G))){paste0("SNP", 1:G)}else{colnames(G)}
+  if(num_G > 1)
+  {
+    colnames(result_frame) = if(is.null(colnames(G))){paste0("SNP_", 1:G)}else{colnames(G)} 
+  }
   
   class(result_frame) = "tmle_gxe"
   
@@ -165,7 +170,8 @@ tmle_EM_iterator = function(Y, A, G, W = NULL,propensity_scores = NULL, family =
 {
   
   p <- NULL
-  num_G = ncol(G)
+  # if G is a single column, we need to set num_G to 1
+  num_G = ifelse(!is.null(ncol(G)),ncol(G), 1)
   if(progress)
   {
     p <- progressor(steps = num_G)
@@ -187,13 +193,25 @@ tmle_EM_iterator = function(Y, A, G, W = NULL,propensity_scores = NULL, family =
 
       if(include_W_outcome && !is.null(W))
       {
-        W_outcome_curr = cbind(G[,-i], W)
+        if(num_G>1)
+        {
+          W_outcome_curr = cbind(G[,-i], W)
+        }else
+        {
+          W_outcome_curr = W
+        }
       }else
       {
-        W_outcome_curr = G[,-i]
+        if(num_G>1)
+        {
+          W_outcome_curr = G[,-i]
+        }else
+        {
+          W_outcome_curr = NULL
+        }
       }
 
-      effect_modifier = G[,i]
+      effect_modifier =  if(num_G>1){G[,i]}else{G}
 
       tmle_mod = TMLE_effect_mod(Y = Y,
                                  A = A,
@@ -212,7 +230,7 @@ tmle_EM_iterator = function(Y, A, G, W = NULL,propensity_scores = NULL, family =
       }
 
       return(tmle_mod)
-    }, future.seed = 2024, future.envir = parent.frame(n = 2))
+    }, future.seed = 2024)
 
     plan(sequential)
   }else
@@ -224,16 +242,28 @@ tmle_EM_iterator = function(Y, A, G, W = NULL,propensity_scores = NULL, family =
       # W_exposure_curr is set to NULL since propensity model is done for all data in beginning.
       # We pass the propensities to TMLE
       W_exposure_curr = NULL
-
+      
       if(include_W_outcome && !is.null(W))
       {
-        W_outcome_curr = cbind(G[,-i], W)
+        if(num_G>1)
+        {
+          W_outcome_curr = cbind(G[,-i], W)
+        }else
+        {
+          W_outcome_curr = W
+        }
       }else
       {
-        W_outcome_curr = G[,-i]
+        if(num_G>1)
+        {
+          W_outcome_curr = G[,-i]
+        }else
+        {
+          W_outcome_curr = NULL
+        }
       }
-
-      effect_modifier = G[,i]
+      
+      effect_modifier =  if(num_G>1){G[,i]}else{G}
 
       tmle_mod = TMLE_effect_mod(Y = Y,
                                  A = A,

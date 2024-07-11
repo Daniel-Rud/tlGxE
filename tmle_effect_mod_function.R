@@ -87,21 +87,6 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  alpha_propensity = alpha_propensity, 
                  clever_cov_propensity_wt = clever_cov_propensity_wt)
   
-    #  obsWeights = Y[E1_indices]*A_prop_int_effects$disease_prev  + 
-    #   (1-Y[E1_indices])*(1 - A_prop_int_effects$disease_prev)*(1/(table(Y[E1_indices])[1] / table(Y[E1_indices])[2]))
-    # 
-    # tmle_pkg = tmle(
-    #   Y = Y[E1_indices],
-    #   A = A[E1_indices],
-    #   W = data.frame(W_outcome)[E1_indices, ],
-    #   Q.SL.library = c("SL.glmnet"),
-    #   g.SL.library = c("SL.glmnet"),
-    #   cvQinit = F, 
-    #   family = "binomial",
-    #   obsWeights = obsWeights)
-  
-  
-  
   tmle_E2 = TMLE(Y = Y[E2_indices], A = A[E2_indices], 
                  W_outcome = if(is.null(W_outcome)){NULL}else{data.frame(W_outcome)[E2_indices, ]}, 
                  W_exposure = if(is.null(W_exposure)){NULL}else{data.frame(W_exposure)[E2_indices, ]}, 

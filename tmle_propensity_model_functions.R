@@ -1,7 +1,9 @@
 
+
+
 # propensity model with superlearner 
 generate_propensity_SL = function(exposure_data, 
-                                  weights,
+                                  obs.weights,
                                   SL.library = c("SL.gam", 
                                                  "SL.glm.interaction", 
                                                  "SL.glmnet", 
@@ -22,14 +24,24 @@ generate_propensity_SL = function(exposure_data,
   {
     
     PS_mod = glm(formula = A ~ 1, data = exposure_data, family = "binomial", 
-                 weights = weights)
+                 weights = obs.weights)
     
     PS = rep(plogis(coef(PS_mod)), l)
     
-  }else # if there are confounders for exposure 
+  }else if(ncol(exposure_data) == 2) # if there is just a single confounder 
+  {
+    # we just run a glm because some SL methods do not accomodate a single predictor
+    # glmnet fails with only 1 confounder -- x should be a matrix with 2 or more columns
+    PS_mod = glm(formula = A ~ ., data = exposure_data, family = "binomial", 
+                 weights = obs.weights)
+    
+    PS = rep(plogis(coef(PS_mod)), l)
+  }
+  
+  else # if there are confounders for exposure 
   {
     Y = exposure_data[,1]
-    X = exposure_data[,-1]
+    X = exposure_data[,-1, drop = F]
     
     if(!parallel)
     {
@@ -38,7 +50,7 @@ generate_propensity_SL = function(exposure_data,
                                               family = binomial, 
                                               SL.library = SL.library, 
                                               method = "method.NNLS", 
-                                              obsWeights = weights, 
+                                              obsWeights = obs.weights, 
                                               cvControl = SL.cvControl))
       
       PS = PS_mod$SL.predict
@@ -57,7 +69,7 @@ generate_propensity_SL = function(exposure_data,
                                                   SL.library = SL.library, 
                                                   cluster = cluster,
                                                   method = "method.NNLS", 
-                                                  obsWeights = weights, 
+                                                  obsWeights = obs.weights, 
                                                   cvControl = SL.cvControl))
       PS = PS_mod$SL.predict
       

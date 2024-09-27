@@ -1,4 +1,4 @@
-compute_gesso = function(outcome_data, train_ids, test_ids, weights, args_list)
+compute_gesso = function(outcome_data, train_ids, test_ids, obs.weights, args_list)
 {
   # gesso does not have implentation with weights!!! So we do not use...
   
@@ -47,11 +47,11 @@ compute_gesso = function(outcome_data, train_ids, test_ids, weights, args_list)
 # }
 
 
-compute_logistf = function(outcome_data, train_ids, test_ids, weights, args_list)
+compute_logistf = function(outcome_data, train_ids, test_ids, obs.weights, args_list)
 {
   
   Q0_mod = logistf(formula = Y ~ ., data = outcome_data[train_ids, ], 
-                   weights = weights[train_ids])
+                   weights = obs.weights[train_ids])
   
   Q0AW = predict(Q0_mod, newdata = outcome_data[test_ids, ], type = "response")
   Q1W = predict(Q0_mod, newdata = cbind(A = rep(1, length(test_ids)), outcome_data[test_ids,-c(1:2)]), type = "response")
@@ -60,7 +60,7 @@ compute_logistf = function(outcome_data, train_ids, test_ids, weights, args_list
   return(return_list)
 }
 
-compute_glmnet_interaction = function(outcome_data, train_ids, test_ids, weights,  args_list)
+compute_glmnet_interaction = function(outcome_data, train_ids, test_ids, obs.weights,  args_list)
 {
   family = args_list$family
   alpha = args_list$alpha 
@@ -89,7 +89,7 @@ compute_glmnet_interaction = function(outcome_data, train_ids, test_ids, weights
   
   Q0_mod = cv.glmnet(y = glm_model_matrix_train[,1], x = as.matrix(glm_model_matrix_train[,-1]),
                      family = family,
-                     weights = weights[train_ids],
+                     weights = obs.weights[train_ids],
                      alpha = alpha,
                      nfolds = nfolds,
                      type.measure = type.measure)
@@ -107,7 +107,7 @@ compute_glmnet_interaction = function(outcome_data, train_ids, test_ids, weights
   return(return_list)
 }
 
-compute_glmnet = function(outcome_data, train_ids, test_ids, weights, args_list)
+compute_glmnet = function(outcome_data, train_ids, test_ids, obs.weights, args_list)
 {
   family = args_list$family
   alpha = args_list$alpha 
@@ -120,7 +120,7 @@ compute_glmnet = function(outcome_data, train_ids, test_ids, weights, args_list)
   
   Q0_mod = cv.glmnet(y = outcome_data$Y[train_ids], x = X,
                      family = family,
-                     weights = weights[train_ids],
+                     weights = obs.weights[train_ids],
                      alpha = alpha,
                      nfolds = nfolds,
                      type.measure = type.measure)
@@ -138,11 +138,41 @@ compute_glmnet = function(outcome_data, train_ids, test_ids, weights, args_list)
   return(return_list)
 }
 
+compute_Superlearner = function(outcome_data, train_ids, test_ids, obs.weights, args_list)
+{
+  family = args_list$family
+  outcome_SL.library = args_list$outcome_SL.library
+  outcome_SL.cvControl = args_list$outcome_SL.cvControl
+  
+  X = outcome_data[train_ids,-1] %>% data.frame
+  X_test = outcome_data[test_ids,-1] %>% data.frame
+  Y = outcome_data[train_ids,1] 
+  Y_test = outcome_data[test_ids,1] 
+  
+  suppressWarnings(Q0_mod <- SuperLearner(Y = Y, X = X,
+                                          newX = NULL, 
+                                          family = family, 
+                                          SL.library = outcome_SL.library, 
+                                          method = "method.NNLS", 
+                                          obsWeights = obs.weights[train_ids], 
+                                          cvControl = outcome_SL.cvControl))
+  
+  
+  Q0AW = predict(Q0_mod, newx = X_test, type = "response", onlySL = TRUE)$pred %>% bound_limits(0,1)
+  Q1W = predict(Q0_mod, newx = cbind(rep(1, nrow(X_test)), X_test[,-1]), onlySL = TRUE)$pred %>% bound_limits(0,1)
+  Q0W = predict(Q0_mod, newx = cbind(rep(0, nrow(X_test)), X_test[,-1]), onlySL = TRUE)$pred %>% bound_limits(0,1)
+  return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
+  return(return_list)
+}
+
+
 
 # if no CV, set nfolds_cv_Q_init = 1
-generate_Q0_cv = function(outcome_data, family, weights, alpha = 0.5, lambda = "lambda.1se",
+generate_Q0_cv = function(outcome_data, family, obs.weights, alpha = 0.5, lambda = "lambda.1se",
                           nfolds_cv_Q_init = 10, nfolds_cv_glmnet = 3, 
-                          outcome_method = c("glmnet_int", "glmnet", "gesso"), 
+                          outcome_method = c("glmnet_int", "glmnet", "gesso", "SL"), 
+                          outcome_SL.library = NULL,
+                          outcome_SL.cvControl = NULL, 
                           type.measure = "deviance")
 {
   # initialize CV splits 
@@ -157,24 +187,34 @@ generate_Q0_cv = function(outcome_data, family, weights, alpha = 0.5, lambda = "
     folds = caret::createFolds(outcome_data$Y %>% factor, k = nfolds_cv_Q_init) 
   }
   
-  # since we use logistic fluctuation, family is always binomial
-  # note that we use `binomial` and not `"binomial"`, the former works and the 
-  # latter does not with a bounded continuous outcome in (0,1), I think cause it 
-  # calls binomial function in R and the other might be an implementation in glmnet
-  
-  family = binomial
+  if(outcome_method != "SL")
+  {
+    # since we use logistic fluctuation, family is always binomial
+    # note that we use `binomial` and not `"binomial"`, the former works and the 
+    # latter does not with a bounded continuous outcome in (0,1), I think cause it 
+    # calls binomial function in R and the other might be an implementation in glmnet
+    
+    # we make the condition whether the SL is being called because 
+    # super learner did not work when using probability outcome with binomial family 
+    
+    family = binomial
+    
+  }
   
   args_list = list(family = family, 
                    alpha = alpha, 
                    lambda = lambda, 
                    nfolds_cv_glmnet = nfolds_cv_glmnet, 
-                   type.measure = type.measure)
+                   type.measure = type.measure, 
+                   outcome_SL.library = outcome_SL.library, 
+                   outcome_SL.cvControl = outcome_SL.cvControl)
   
   outcome_function = switch(outcome_method, 
                             glmnet_int = compute_glmnet_interaction, 
                             glmnet = compute_glmnet, 
                             gesso = compute_gesso, 
-                            logistf = compute_logistf
+                            logistf = compute_logistf, 
+                            SL = compute_Superlearner
   )
   
   results = lapply(1:length(folds), FUN = function(i)
@@ -188,7 +228,7 @@ generate_Q0_cv = function(outcome_data, family, weights, alpha = 0.5, lambda = "
     }
     
     return_list = outcome_function(outcome_data = outcome_data, train_ids = train_ids, 
-                                   test_ids = test_ids, weights = weights, 
+                                   test_ids = test_ids, obs.weights = obs.weights, 
                                    args_list = args_list)
     
     return(return_list)

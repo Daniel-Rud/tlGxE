@@ -11,7 +11,13 @@ plot.tmle_gxe = function(object, ...)
   
   passed_args = list(...)
   
-  sig_lvl = -1*log(0.05, base = 10)
+  alpha = 0.05
+  if(passed_args$alpha %in% passed_args)
+  {
+    alpha = passed_args$alpha
+  }
+  
+  sig_lvl = -1*log(alpha, base = 10)
   
   result_frame = object
   G_names = colnames(result_frame)
@@ -39,7 +45,7 @@ plot.tmle_gxe = function(object, ...)
   ATE_pvalue_plot_data = data.frame(G_names = G_names %>% factor(levels =G_names, ordered = T),
                                     neg_log_10_pvalues = -1*(c(ATE_aov_pvalues, ATE_lin_pvalues) %>% log(base = 10)),
                                     Significant = c(ATE_signif_aov,ATE_signif_lin),
-                                    Type = rep(c("AOV", "Linear"), each = length(G_names))
+                                    Type = rep(c("tlGxE 2df", "tlGxE 1df"), each = length(G_names))
   )
   
   ATE_pvalue_plot = ggplot(data = ATE_pvalue_plot_data, mapping = aes(x = G_names, y = neg_log_10_pvalues)) +
@@ -78,7 +84,7 @@ plot.tmle_gxe = function(object, ...)
   MOR_pvalue_plot_data = data.frame(G_names = G_names %>% factor(levels =G_names, ordered = T),
                                     neg_log_10_pvalues = -1*(c(MOR_aov_pvalues, MOR_mult_pvalues) %>% log(base = 10)),
                                     Significant = c(MOR_signif_aov,MOR_signif_mult),
-                                    Type = rep(c("AOV", "Multiplicative"), each = length(G_names))
+                                    Type = rep(c("tlGxE 2df", "tlGxE 1df"), each = length(G_names))
   )
   
   

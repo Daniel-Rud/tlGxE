@@ -123,57 +123,23 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
   n1 = length(E1_indices)
   n2 = length(E2_indices)
   
-  var_0 = n0*tmle_E0$ATE_var
-  var_1 = n1*tmle_E1$ATE_var
-  var_2 = n2*tmle_E2$ATE_var
+  ATE_welch_aov = welch_anova(means = c(tmle_E0$ATE, tmle_E1$ATE, tmle_E2$ATE), 
+                              var_means = c(tmle_E0$ATE_var, tmle_E1$ATE_var, tmle_E2$ATE_var), 
+                              sample_sizes = c(n0, n1, n2))
   
-  xbar_0 = tmle_E0$ATE 
-  xbar_1 = tmle_E1$ATE 
-  xbar_2 = tmle_E2$ATE 
+  ATE_EM_F_statistic = ATE_welch_aov$F_statistic
   
-  n_vec = c(n0, n1, n2)
-  xbar_vec = c(xbar_0, xbar_1, xbar_2)
-  var_vec = c(var_0, var_1, var_2) 
-  xbar_grand = n_vec %*% xbar_vec / sum(n_vec)
-  # Setup for typical ANOVA ##############
-  
-  SSB = (n_vec) %*% (xbar_vec - rep(xbar_grand, 3))^2
-  SSW = (n_vec - 1) %*% var_vec 
-  
-  MSB = SSB / (3-1)
-  MSW = SSW / (sum(n_vec) - 3)
-  
-  ATE_EM_F_statistic = MSB / MSW
-  
-  ATE_EM_pvalue = pf(ATE_EM_F_statistic, df1 = 3 - 1,sum(n_vec) - 3 , lower.tail = F)
+  ATE_EM_pvalue = ATE_welch_aov$p_value
   
   # Perform anova for MOR results 
   
-  var_0 = n0*tmle_E0$MOR_var
-  var_1 = n1*tmle_E1$MOR_var
-  var_2 = n2*tmle_E2$MOR_var
+  MOR_welch_aov = welch_anova(means = c(tmle_E0$MOR, tmle_E1$MOR, tmle_E2$MOR), 
+                              var_means = c(tmle_E0$MOR_var, tmle_E1$MOR_var, tmle_E2$MOR_var), 
+                              sample_sizes = c(n0, n1, n2))
   
-  xbar_0 = tmle_E0$MOR
-  xbar_1 = tmle_E1$MOR
-  xbar_2 = tmle_E2$MOR
+  MOR_EM_F_statistic = MOR_welch_aov$F_statistic
   
-  n_vec = c(n0, n1, n2)
-  xbar_vec = c(xbar_0, xbar_1, xbar_2)
-  var_vec = c(var_0, var_1, var_2)
-  
-  xbar_grand = n_vec %*% xbar_vec / sum(n_vec)
-  
-  # Setup for typical ANOVA ##############
-  
-  SSB = (n_vec) %*% (xbar_vec - rep(xbar_grand, 3))^2
-  SSW = (n_vec - 1) %*% var_vec
-  
-  MSB = SSB / (3-1)
-  MSW = SSW / (sum(n_vec) - 3)
-  
-  MOR_EM_F_statistic = MSB / MSW
-  
-  MOR_EM_pvalue = pf(MOR_EM_F_statistic, df1 = 3 - 1,sum(n_vec) - 3 , lower.tail = F)
+  MOR_EM_pvalue = MOR_welch_aov$p_value
   
   # 1 df linear ATE test 
   m0 = tmle_E0$ATE
@@ -186,7 +152,6 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
   
   ATE_linear_results = linear_EM_test(m0 = m0, m1 = m1, m2 = m2, 
                                       var_m0 = var_m0, var_m1 = var_m1, var_m2 = var_m2)
-  
   
   ATE_EM_lin_baseline_est = ATE_linear_results$EM_lin_baseline
   ATE_EM_lin_est = ATE_linear_results$EM_hat
@@ -289,4 +254,40 @@ linear_EM_test = function(m0, m1, m2, var_m0, var_m1, var_m2)
   return(list(Z_stat = Z_EM, pvalue =  lin_EM_pvalue, 
          EM_hat = EM_hat, EM_lin_baseline = EM_lin_baseline))
 }
+
+welch_anova = function(means, var_means, sample_sizes)
+{
+  # Convert variances of means to sample variances
+  sample_variances = var_means * sample_sizes
+  
+  # Number of groups
+  k = 3
+  
+  # Calculate weights and grand mean
+  weights = sample_sizes / sample_variances
+  grand_mean = sum(weights * means) / sum(weights)
+  
+  # Between-group sum of squares (SSB) and mean square (MSB)
+  SSB = sum(weights * (means - grand_mean)^2)
+  MSB = SSB / (k - 1)
+  
+  # Within-group mean square (MSW)
+  
+  MSW = 1 + (2*(k-2)/(k^2-1)) * sum((1/(sample_sizes - 1)) * (1 - weights/sum(weights))^2)
+  
+  # Calculate Welch's F-statistic
+  F_stat = MSB / MSW
+  
+  # Degrees of freedom
+  df1 = k - 1
+  df2 = (k^2 - 1) / (3*sum((1 - weights / sum(weights))^2 / (sample_sizes - 1)))
+  
+  # Calculate p-value
+  p_value = pf(F_stat, df1, df2, lower.tail = FALSE)
+  
+  # Return results
+  return(list(F_statistic = F_stat, p_value = p_value, df1 = df1, df2 = df2))
+}
+
+
 

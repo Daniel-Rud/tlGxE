@@ -1,4 +1,5 @@
 
+library(progressr)
 source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_effect_mod_function.R")
 source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_gxe_post_process.R")
 source("/Users/danielrud/Desktop/USC/Targeted Learning/tlgxe/tmle_helper_functions.R")
@@ -21,6 +22,7 @@ suppress_output <- function(expr) {
 tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
                     case_control_design = F, disease_prevalence = NULL,
                     obs.weights = NULL, 
+                    propensity_scores = NULL, 
                     TMLE_args_list = list(
                       outcome_method = c("glmnet_int", "glmnet", "gesso", "logistf", "SL"),
                       npv_thresh = (5/sqrt(length(Y)))/log(length(Y)),
@@ -106,40 +108,39 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
   #########################################################################
   # Fit overall propensity model ##########################################
   #########################################################################
-  if(verbose == T)
-  {
-    message("Fitting Propensity model using Super Learner...")
-  }
-  
-  propensity_scores = NULL
-  
-  if(!is.null(propensity_formula))
+  if(is.null(propensity_scores)) # if no propensity scores are supplied 
   {
     
-    full_exposure_data = cbind(A = A, G)
-    if(!is.null(W))
+    if(!is.null(propensity_formula))
     {
-      full_exposure_data = cbind(full_exposure_data, W)
+      
+      full_exposure_data = cbind(A = A, G)
+      if(!is.null(W))
+      {
+        full_exposure_data = cbind(full_exposure_data, W)
+      }
+      full_exposure_data = full_exposure_data %>% data.frame()
+      
+      # this line is needed because glm was otherwise giving problems 
+      # with the scoping of the obs.weight arg.  Lot of headache....
+      environment(propensity_formula) = environment()
+      
+      propensity_scores = glm(formula = propensity_formula, data = full_exposure_data, 
+                              weights = obs.weights, family = "binomial") %>% predict(type = "response")
+      
+    }else
+    {
+      if(verbose == T)
+      {
+        message("Fitting Propensity model using Super Learner...")
+      }
+      suppress_output(propensity_scores <- generate_propensity_SL(exposure_data = data.frame(if(is.null(W_propensity)){A}else{cbind(A, W_propensity)}), 
+                                                                  obs.weights = obs.weights, 
+                                                                  SL.library = propensity_SL.library, 
+                                                                  SL.cvControl = propensity_SL.cvControl, 
+                                                                  parallel = parallel, 
+                                                                  ncores = ncores))
     }
-    full_exposure_data = full_exposure_data %>% data.frame()
-    
-    # this line is needed because glm was otherwise giving problems 
-    # with the scoping of the obs.weight arg.  Lot of headache....
-    environment(propensity_formula) = environment()
-    
-    propensity_scores = glm(formula = propensity_formula, data = full_exposure_data, 
-                            weights = obs.weights, family = "binomial") %>% predict(type = "response")
-    
-  }else
-  {
-    
-    
-    suppress_output(propensity_scores <- generate_propensity_SL(exposure_data = data.frame(if(is.null(W_propensity)){A}else{cbind(A, W_propensity)}), 
-                                                                obs.weights = obs.weights, 
-                                                                SL.library = propensity_SL.library, 
-                                                                SL.cvControl = propensity_SL.cvControl, 
-                                                                parallel = parallel, 
-                                                                ncores = ncores))
   }
   
   #########################################################################
@@ -271,7 +272,7 @@ tmle_EM_iterator = function(Y, A, G, W = NULL,propensity_scores = NULL, family =
       }
 
       effect_modifier =  if(!is.null(ncol(G))){G[,i]}else{G}
-
+      
       tmle_mod = TMLE_effect_mod(Y = Y,
                                  A = A,
                                  effect_modifier = effect_modifier,

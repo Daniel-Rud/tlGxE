@@ -12,9 +12,9 @@ plot.tmle_gxe = function(object, ...)
   passed_args = list(...)
   
   alpha = 0.05
-  if(passed_args$alpha %in% passed_args)
+  if(length(passed_args) >= 1)
   {
-    alpha = passed_args$alpha
+    alpha = passed_args[[1]]
   }
   
   sig_lvl = -1*log(alpha, base = 10)
@@ -42,26 +42,43 @@ plot.tmle_gxe = function(object, ...)
   ATE_signif_aov = ifelse(-1*log(ATE_aov_pvalues, base = 10) < sig_lvl, 0, 1) %>% factor
   ATE_signif_lin = ifelse(-1*log(ATE_lin_pvalues, base = 10) < sig_lvl, 0, 1) %>% factor
   
-  ATE_pvalue_plot_data = data.frame(G_names = G_names %>% factor(levels =G_names, ordered = T),
-                                    neg_log_10_pvalues = -1*(c(ATE_aov_pvalues, ATE_lin_pvalues) %>% log(base = 10)),
-                                    Significant = c(ATE_signif_aov,ATE_signif_lin),
-                                    Type = rep(c("tlGxE 2df", "tlGxE 1df"), each = length(G_names))
-  )
+  ATE_aov_data = data.frame(G_names = G_names %>% factor(levels =G_names, ordered = T),
+                               neg_log_10_pvalues = -1 * log(ATE_aov_pvalues, base = 10),
+                               Significant = ATE_signif_aov)
+  ATE_linear_data = data.frame(G_names = G_names %>% factor(levels =G_names, ordered = T),
+                            neg_log_10_pvalues = -1 * log(ATE_lin_pvalues, base = 10),
+                            Significant = ATE_signif_lin)
   
-  ATE_pvalue_plot = ggplot(data = ATE_pvalue_plot_data, mapping = aes(x = G_names, y = neg_log_10_pvalues)) +
-    geom_point(mapping = aes(color = Significant, shape = Type)) +
-    scale_color_manual(values = c("black", "red")) + scale_shape_manual(values = c(16, 17)) +
+  ATE_aov_plot = ggplot(data = ATE_aov_data, mapping = aes(x = G_names, y = neg_log_10_pvalues)) +
+    geom_point(mapping = aes(color = Significant)) +
+    scale_color_manual(values = c("black", "red")) +
     geom_hline(yintercept = sig_lvl, color = "red", linetype = "dashed") +
     ylab(latex2exp::TeX("$-log_{10}(pvalue)$")) + xlab("SNP") +
     geom_text(mapping = aes(x = G_names, y = neg_log_10_pvalues, label =G_names),
-              data = subset(ATE_pvalue_plot_data, ATE_pvalue_plot_data$Significant == 1),
-              check_overlap = F,hjust = -0.25, vjust = .5, size = 3.5) +
-    ggtitle("Average Treatment Effect") +
+              data = subset(ATE_aov_data, ATE_aov_data$Significant == 1),
+              check_overlap = F, hjust = -0.2, vjust = .5, size = 3.5) +
+    ggtitle("Effect Modification for Average Treatment Effect: tlGxE Anova") +
     theme_classic() +
     theme(plot.title = element_text(hjust = 0.5),
           axis.text.x=element_blank(),
           axis.ticks.x=element_blank()) +
     guides(color = guide_legend(order = 1), shape = guide_legend(order = 2))
+    
+  ATE_linear_plot = ggplot(data = ATE_linear_data, mapping = aes(x = G_names, y = neg_log_10_pvalues)) +
+    geom_point(mapping = aes(color = Significant)) +
+    scale_color_manual(values = c("black", "red")) +
+    geom_hline(yintercept = sig_lvl, color = "red", linetype = "dashed") +
+    ylab(latex2exp::TeX("$-log_{10}(pvalue)$")) + xlab("SNP") +
+    geom_text(mapping = aes(x = G_names, y = neg_log_10_pvalues, label =G_names),
+              data = subset(ATE_linear_data, ATE_linear_data$Significant == 1),
+              check_overlap = F, hjust = -0.2, vjust = .5, size = 3.5) +
+    ggtitle("Effect Modification for Average Treatment Effect: tlGxE 1df") +
+    theme_classic() +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank()) +
+    guides(color = guide_legend(order = 1), shape = guide_legend(order = 2))
+  
   
   
   
@@ -81,22 +98,40 @@ plot.tmle_gxe = function(object, ...)
   MOR_signif_aov = ifelse(-1*log(MOR_aov_pvalues, base = 10) < sig_lvl, 0, 1) %>% factor
   MOR_signif_mult = ifelse(-1*log(MOR_mult_pvalues, base = 10) < sig_lvl, 0, 1) %>% factor
   
-  MOR_pvalue_plot_data = data.frame(G_names = G_names %>% factor(levels =G_names, ordered = T),
-                                    neg_log_10_pvalues = -1*(c(MOR_aov_pvalues, MOR_mult_pvalues) %>% log(base = 10)),
-                                    Significant = c(MOR_signif_aov,MOR_signif_mult),
-                                    Type = rep(c("tlGxE 2df", "tlGxE 1df"), each = length(G_names))
-  )
   
   
-  MOR_pvalue_plot = ggplot(data = MOR_pvalue_plot_data, mapping = aes(x = G_names, y = neg_log_10_pvalues)) +
-    geom_point(mapping = aes(color = Significant, shape = Type)) +
-    scale_color_manual(values = c("black", "red")) + scale_shape_manual(values = c(16, 17)) +
+  MOR_aov_data = data.frame(G_names = G_names %>% factor(levels =G_names, ordered = T),
+                                    neg_log_10_pvalues = -1*log(MOR_aov_pvalues, base = 10),
+                                    Significant = MOR_signif_aov)
+  MOR_mult_data = data.frame(G_names = G_names %>% factor(levels =G_names, ordered = T),
+                            neg_log_10_pvalues = -1*log(MOR_mult_pvalues, base = 10),
+                            Significant = MOR_signif_mult)
+  
+  MOR_aov_plot = ggplot(data = MOR_aov_data, mapping = aes(x = G_names, y = neg_log_10_pvalues)) +
+    geom_point(mapping = aes(color = Significant)) +
+    scale_color_manual(values = c("black", "red")) +
     geom_hline(yintercept = sig_lvl, color = "red", linetype = "dashed") +
     ylab(latex2exp::TeX("$-log_{10}(pvalue)$")) + xlab("SNP") +
     geom_text(mapping = aes(x = G_names, y = neg_log_10_pvalues, label =G_names),
-              data = subset(MOR_pvalue_plot_data, MOR_pvalue_plot_data$Significant == 1),
-              check_overlap = F,hjust = -0.25, vjust = .5, size = 3.5) +
-    ggtitle("Marginal Odds Ratio") +
+              data = subset(MOR_aov_data, MOR_aov_data$Significant == 1),
+              check_overlap = F,hjust = -0.2, vjust = .5, size = 3.5) +
+    ggtitle("Effect Modification for Marginal Odds Ratio: tlGxE Anova") +
+    theme_classic() +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text.x=element_blank(),
+          axis.ticks.x=element_blank()) +
+    guides(color = guide_legend(order = 1), shape = guide_legend(order = 2))
+  
+  
+  MOR_mult_plot = ggplot(data = MOR_mult_data, mapping = aes(x = G_names, y = neg_log_10_pvalues)) +
+    geom_point(mapping = aes(color = Significant)) +
+    scale_color_manual(values = c("black", "red")) +
+    geom_hline(yintercept = sig_lvl, color = "red", linetype = "dashed") +
+    ylab(latex2exp::TeX("$-log_{10}(pvalue)$")) + xlab("SNP") +
+    geom_text(mapping = aes(x = G_names, y = neg_log_10_pvalues, label =G_names),
+              data = subset(MOR_mult_data, MOR_mult_data$Significant == 1),
+              check_overlap = F,hjust = -0.2, vjust = .5, size = 3.5) +
+    ggtitle("Effect Modification for Marginal Odds Ratio: tlGxE 1df") +
     theme_classic() +
     theme(plot.title = element_text(hjust = 0.5),
           axis.text.x=element_blank(),
@@ -105,8 +140,9 @@ plot.tmle_gxe = function(object, ...)
   
   #############################################################################
   
-  plot = ggpubr::ggarrange(ATE_pvalue_plot, MOR_pvalue_plot,
-                           ncol = 1)
+  plot = ggpubr::ggarrange(ATE_aov_plot, ATE_linear_plot, 
+                           MOR_aov_plot, MOR_mult_plot, 
+                           nrow = 2, ncol = 2)
   
   return(plot)
 }

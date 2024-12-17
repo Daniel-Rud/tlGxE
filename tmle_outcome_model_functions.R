@@ -73,6 +73,11 @@ compute_glmnet_interaction = function(outcome_data, train_ids, test_ids, obs.wei
   colnames(glm_model_matrix_train) = c("Y", "A",  c(colnames(outcome_data)[-c(1:2)], 
                                                     paste0("A*", colnames(outcome_data)[-c(1:2)])))
   
+  # create fold ids 
+  stratification_var = interaction(glm_model_matrix_train[,"Y"], glm_model_matrix_train[,"A"])
+  fold_ids = caret::createFolds(stratification_var, k = nfolds, list = FALSE)
+  
+  
   glm_model_matrix_test = cbind(outcome_data[test_ids, ], 
                                 outcome_data[test_ids, -c(1:2)] * outcome_data[test_ids,2])
   colnames(glm_model_matrix_test) = c("Y", "A",  c(colnames(outcome_data)[-c(1:2)], 
@@ -92,7 +97,8 @@ compute_glmnet_interaction = function(outcome_data, train_ids, test_ids, obs.wei
                      weights = obs.weights[train_ids],
                      alpha = alpha,
                      nfolds = nfolds,
-                     type.measure = type.measure)
+                     type.measure = type.measure, 
+                     foldid = fold_ids)
   
   s = Q0_mod$lambda.1se
   if(lambda == "lambda.min")
@@ -118,12 +124,16 @@ compute_glmnet = function(outcome_data, train_ids, test_ids, obs.weights, args_l
   X = as.matrix(outcome_data[train_ids,-1])
   X_test = as.matrix(outcome_data[test_ids,-1])
   
+  stratification_var = interaction(X[,"Y"], X[,"A"])
+  fold_ids = caret::createFolds(stratification_var, k = nfolds, list = FALSE)
+  
   Q0_mod = cv.glmnet(y = outcome_data$Y[train_ids], x = X,
                      family = family,
                      weights = obs.weights[train_ids],
                      alpha = alpha,
                      nfolds = nfolds,
-                     type.measure = type.measure)
+                     type.measure = type.measure, 
+                     foldid = fold_ids)
   
   s = Q0_mod$lambda.1se
   if(lambda == "lambda.min")
@@ -184,7 +194,9 @@ generate_Q0_cv = function(outcome_data, family, obs.weights, alpha = 0.5, lambda
     folds = caret::createFolds(outcome_data$Y, k = nfolds_cv_Q_init)
   }else
   {
-    folds = caret::createFolds(outcome_data$Y %>% factor, k = nfolds_cv_Q_init) 
+    # note that the cross validation folds are stratified by both outcome and and exposure status
+    stratification_var = interaction(outcome_data$Y, outcome_data$A)
+    folds = caret::createFolds(stratification_var, k = nfolds_cv_Q_init) 
   }
   
   if(outcome_method != "SL")

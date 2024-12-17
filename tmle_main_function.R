@@ -326,7 +326,7 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
   
   EIC_MOR = (((1 - EY0_tmle) / (EY0_tmle * (1-EY1_tmle)^2)) * D1 -
     (EY1_tmle / ((1 - EY1_tmle) * EY0_tmle^2))* D0)*obs.weights
-  Var_EIC_MOR = var(EIC_MOR) / length(Y)
+  Var_EIC_MOR = var(EIC_MOR) / length(Y) 
   
   MOR_CI = c("2.5%" = MOR_tmle - qZ*sqrt(Var_EIC_MOR), 
              "97.5%" = MOR_tmle + qZ*sqrt(Var_EIC_MOR))

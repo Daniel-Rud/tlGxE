@@ -273,24 +273,35 @@ tmle_EM_iterator = function(Y, A, G, W = NULL,propensity_scores = NULL, family =
 
       effect_modifier =  if(!is.null(ncol(G))){G[,i]}else{G}
       
-      tmle_mod = TMLE_effect_mod(Y = Y,
-                                 A = A,
-                                 effect_modifier = effect_modifier,
-                                 W_outcome = W_outcome_curr,
-                                 W_exposure = W_exposure_curr,
-                                 family = family,
-                                 outcome_formula = outcome_formula,
-                                 propensity_scores = propensity_scores,
-                                 case_control_design = case_control_design,
-                                 disease_prevalence = disease_prevalence,
-                                 obs.weights = obs.weights,
-                                 TMLE_args_list = TMLE_args_list)
-      if(progress)
+      # round the effect modifier SNP in case the data is supplied as imputed dosages
+      effect_modifier = round(effect_modifier)
+      
+      # if the current SNP does not have representation for all of SNP = 0,1,2
+      if(length(unique(effect_modifier)) != 3)
       {
-        p()
+        message("SNP ",i, " does not have representation of all levels {0, 1, 2} and is therefore excluded from effect modification testing.")
+        return(NULL)
+      }else
+      {
+        tmle_mod = TMLE_effect_mod(Y = Y,
+                                   A = A,
+                                   effect_modifier = effect_modifier,
+                                   W_outcome = W_outcome_curr,
+                                   W_exposure = W_exposure_curr,
+                                   family = family,
+                                   outcome_formula = outcome_formula,
+                                   propensity_scores = propensity_scores,
+                                   case_control_design = case_control_design,
+                                   disease_prevalence = disease_prevalence,
+                                   obs.weights = obs.weights,
+                                   TMLE_args_list = TMLE_args_list)
+        if(progress)
+        {
+          p()
+        }
+        
+        return(tmle_mod)
       }
-
-      return(tmle_mod)
     }, future.seed = 2024)
     
     if(parallel)

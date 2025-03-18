@@ -36,7 +36,7 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  'outcome_SL.library', 
                  'outcome_SL.cvControl')
   
-  if(!identical(names(TMLE_args_list), arg_names))
+  if(!all(arg_names %in% names(TMLE_args_list)))
   {
     stop(paste0("TMLE_args_list must be specified with elements for all included arguments in list. One argument may have been missing or misspelled.  Check to see if the following arguments 
                are included: ", paste0(arg_names, collapse = ", ")))
@@ -65,7 +65,7 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  outcome_formula = outcome_formula, 
                  case_control_design = case_control_design, 
                  disease_prevalence = disease_prevalence,
-                 propensity_scores = propensity_scores[E0_indices],
+                 propensity_scores = if(is.null(propensity_scores)) { NULL } else { propensity_scores[E0_indices] },
                  obs.weights = obs.weights[E0_indices],
                  outcome_method = outcome_method, 
                  npv_thresh = npv_thresh, 
@@ -83,7 +83,7 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  family = family, 
                  outcome_formula = outcome_formula, 
                  case_control_design = case_control_design, 
-                 propensity_scores = propensity_scores[E1_indices],
+                 propensity_scores = if(is.null(propensity_scores)) { NULL } else { propensity_scores[E1_indices] },
                  obs.weights = obs.weights[E1_indices],
                  disease_prevalence = disease_prevalence,
                  outcome_method = outcome_method, 
@@ -102,7 +102,7 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  family = family, 
                  outcome_formula = outcome_formula, 
                  case_control_design = case_control_design,
-                 propensity_scores = propensity_scores[E2_indices],
+                 propensity_scores = if(is.null(propensity_scores)) { NULL } else { propensity_scores[E2_indices] },
                  obs.weights = obs.weights[E2_indices], 
                  disease_prevalence = disease_prevalence,
                  outcome_method = outcome_method, 

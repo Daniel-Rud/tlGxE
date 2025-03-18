@@ -76,6 +76,11 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
     }
   }
   
+  if(case_control_design && is.null(disease_prevalence))
+  {
+    stop("Outcome prevalence must be supplied if case control design.")
+  }
+  
   # initialize observation weights 
 
   if(case_control_design && is.null(obs.weights)) # if case control design and weights not specified 
@@ -191,12 +196,15 @@ tmle_gxe = function(Y, A, G, W = NULL, family = "binomial",
   
   
   result_frame = do.call(cbind, tmle_results)
-  if(num_G > 1)
+  if(num_G > 1 && !is.null(result_frame))
   {
     colnames(result_frame) = if(is.null(colnames(G))){paste0("SNP_", SNP_results)}else{colnames(G)[SNP_results]} 
   }
   
-  class(result_frame) = "tmle_gxe"
+  if(!is.null(result_frame))
+  {
+    class(result_frame) = "tmle_gxe" 
+  }
   
   return(result_frame)
 }
@@ -241,6 +249,7 @@ tmle_EM_iterator = function(Y, A, G, W = NULL,propensity_scores = NULL, family =
   if(parallel)
   {
     plan(multisession, workers = ncores)
+    on.exit(plan(sequential), add = TRUE)
   }
 
     tmle_results = future_lapply(SNP_results, FUN = function(i)

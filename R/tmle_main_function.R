@@ -222,12 +222,13 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
   }else
   {
     suppressWarnings(Q0 <- generate_Q0_cv(outcome_data = outcome_data, family = family, 
-                                          alpha = alpha_outcome, lambda = "lambda.min",
+                                          alpha = alpha_outcome, lambda = "lambda.1se",
                                           nfolds_cv_Q_init = nfolds_cv_Q_init, nfolds_cv_glmnet = nfolds_cv_glmnet_outcome, 
                                           outcome_method = outcome_method, obs.weights = obs.weights, 
                                           outcome_SL.library = outcome_SL.library, 
                                           outcome_SL.cvControl = outcome_SL.cvControl))
   }
+  
   
   #######################################################
   # STEP 3: Clever Covariate
@@ -349,8 +350,7 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
   }
   
   ATE_untargeted = m1 - m0
-  MOR_untargeted = (m1 / (1-m1)) / (m0 / (1-m0))
-  
+  MOR_untargeted = (m1 * (1-m0)) / ((1-m1) * m0)
   
   result_list = list(
     ATE = ATE_tmle, 

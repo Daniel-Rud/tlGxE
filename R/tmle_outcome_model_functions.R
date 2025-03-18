@@ -124,7 +124,7 @@ compute_glmnet = function(outcome_data, train_ids, test_ids, obs.weights, args_l
   X = as.matrix(outcome_data[train_ids,-1])
   X_test = as.matrix(outcome_data[test_ids,-1])
   
-  stratification_var = interaction(X[,"Y"], X[,"A"])
+  stratification_var = interaction(outcome_data$Y[train_ids], X[,"A"])
   fold_ids = caret::createFolds(stratification_var, k = nfolds, list = FALSE)
   
   Q0_mod = cv.glmnet(y = outcome_data$Y[train_ids], x = X,

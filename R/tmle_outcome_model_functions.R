@@ -80,9 +80,9 @@ compute_glmnet_interaction = function(outcome_data, train_ids, test_ids, obs.wei
     s = Q0_mod$lambda.min
   }
 
-  Q0AW = glmnet::predict(Q0_mod, newx = glm_model_matrix_test[,-1] %>% as.matrix, type = "response", s = s)
-  Q1W = glmnet::predict(Q0_mod, newx = glm_model_matrix1[,-1]%>% as.matrix, type = "response", s = s)
-  Q0W = glmnet::predict(Q0_mod, newx = glm_model_matrix0[,-1]%>% as.matrix, type = "response", s = s)
+  Q0AW = glmnet::predict.glmnet(Q0_mod, newx = glm_model_matrix_test[,-1] %>% as.matrix, type = "response", s = s)
+  Q1W = glmnet::predict.glmnet(Q0_mod, newx = glm_model_matrix1[,-1]%>% as.matrix, type = "response", s = s)
+  Q0W = glmnet::predict.glmnet(Q0_mod, newx = glm_model_matrix0[,-1]%>% as.matrix, type = "response", s = s)
   return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
   return(return_list)
 }
@@ -115,9 +115,9 @@ compute_glmnet = function(outcome_data, train_ids, test_ids, obs.weights, args_l
     s = Q0_mod$lambda.min
   }
 
-  Q0AW = glmnet::predict(Q0_mod, newx = X_test, type = "response", s = s )
-  Q1W = glmnet::predict(Q0_mod, newx = cbind(rep(1, nrow(X_test)), X_test[,-1]), type = "response", s = s)
-  Q0W = glmnet::predict(Q0_mod, newx = cbind(rep(0, nrow(X_test)), X_test[,-1]), type = "response", s = s)
+  Q0AW = glmnet::predict.glmnet(Q0_mod, newx = X_test, type = "response", s = s )
+  Q1W = glmnet::predict.glmnet(Q0_mod, newx = cbind(rep(1, nrow(X_test)), X_test[,-1]), type = "response", s = s)
+  Q0W = glmnet::predict.glmnet(Q0_mod, newx = cbind(rep(0, nrow(X_test)), X_test[,-1]), type = "response", s = s)
   return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
   return(return_list)
 }

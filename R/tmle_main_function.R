@@ -5,6 +5,69 @@
 #                          in glm instead of in the covariate
 # for continuous outcome, uses logistic fluctuation
 # we always use logistic fluctuation, no linear fluctuation
+
+#'
+#'Performs Targeted Maximum Likelihood Estimation (TMLE).  Native TMLE implementation used for \code{tlGxE}.
+#'
+#' @param Y Outcome vector, should be numeric. Either \eqn{\{0,1\}} vector for \code{family = "binomial"} or a numeric vector for
+#' continuous outcome for \code{family = "gaussian"}
+#' @param A Binary exposure vector, generally a binary \eqn{\{0,1\}} vector.
+#' @param W_outcome Data Frame of covariates to include in the outcome model (do not need to include the exposure)
+#' Columns of \code{W_outcome} should only include numeric vectors.  If categorical variables are used in the analysis and are not already recoded
+#' into dummy variables, consider using the \code{model.matrix()} function and removing the intercept column (usually the first column)
+#' @param W_exposure Data Frame of covariates to include in the propensity model
+#' Columns of \code{W_outcome} should only include numeric vectors.  If categorical variables are used in the analysis and are not already recoded
+#' into dummy variables, consider using the \code{model.matrix()} function and removing the intercept column (usually the first column)
+#' @param family One of either "binomial" or "gaussian" for binary or continuous outcomes respectively
+#' @param propensity_formula Option to include a formula for the propensity model to fit a generalized linear model.  **NOTE:** when creating a
+#' formula, refer to the exposure variable as \code{A} irregardless of its true name.  Confounders can be references through their columnnames
+#' in the \code{W_exposure} dataframe.
+#' @param outcome_formula Option to include a formula for the outcome model to fit a generalized linear model.  **NOTE:** when creating a
+#' formula, refer to the outcome variable as \code{Y} and the exposure variable as \code{A} irregardless of their true names.
+#' Confounders can be references through their columnnames in the \code{W_outcome} dataframe.
+#' @param case_control_design Boolean, If outcome is binary and data comes from a case control sampling design, should be set to \code{TRUE}.
+#' In addition, the user must supply the estimated disease prevalence in the \code{disease_prevalence} argument.  This is because
+#' the TMLE procedure is not robust to biased sampling designs and must instead account for this bias through a case control weighted
+#' TMLE.
+#' @param disease_prevalence Single numeric estimated prevalence of disease outcome.  Only necessary if case control design is set to \code{TRUE}.
+#' @param propensity_scores Optional argument to include pre-computed propensity scores, should be a vector of pre-computed propensity
+#' scores for the exposure of \code{A}.
+#' @param obs.weights Vector of observation weights.  Default is to set all weights to 1 unless it is indicated that the sampling design is
+#' case control, can be used for custom weighing of observations and overrides any other weights.
+#' @param outcome_method Specification of the outcome model for tlGxE, should be one of
+#' either "glmnet", "glmnet_int", "gesso", or "SL". "glmnet" corresponds to the elastic net model implemented in the
+#' \code{glmnet} package, "glmnet_int" corresponds to a non-hierarchical interaction model that includes all main effects for \emph{A} and
+#' confounders, along with interactions between \emph{A} and all covariates in \eqn{\{G, W\}}.  "gesso" fits the hierarchical lasso GxE model described
+#' in Zemlianskaia et al 2022.  "SL" corresponds to using SuperLearning for the outcome model.  If the "SL" option is specified, the
+#' SuperLearner can be configured through the \code{outcome_SL.library} and \code{outcome_SL.cvControl} options.
+#' @param npv_thresh numeric value between \eqn{[0, 0.2]} which specifies the near positivity violator threshold, essentially setting
+#' a bounds on defining observations with extreme propensity for exposure or no-exposure.
+#' @param near_positivity_method Either one of "trim" or "rebound".  Defines how to deal with near-positivity violators, as
+#' determined by observations that have extreme propensity (with respect to the \code{npv_thresh}).  Near positivity violators are
+#' either removed from the analysis if \code{near_positivity_method = "trim"} or rebounded to the maximum allowable propensity
+#' (either npv_thresh or 1-npv_thresh) if \code{near_positivity_method = "rebound"}.
+#' @param nfolds_cv_Q_init Number of cross validation folds for the CV-TMLE procedure.  Controls number of cv folds for the outcome model,
+#' where the outcome model is refitted \code{nfolds_cv_Q_init} times on \code{nfolds_cv_Q_init -1} and the expected outcome is predicted on
+#' out of fold observations.  Default is 10.
+#' @param nfolds_cv_glmnet_outcome Number of cv folds for the outcome model if a
+#' \code{glmnet}-based model is used.  If \code{outcome_method = "SL"}, argument is ignored.
+#' @param alpha_outcome Numeric alpha parameter if \code{glmnet} model is used.  Alpha should be between \eqn{\[0,1\]} where \eqn{0} corresponds
+#' to the Ridge Regression,  \eqn{.5} corresponds to the standard Elastic Net, and \eqn{1} corresponds to the LASSO.
+#' @param clever_cov_propensity_wt Option to either include clever covariate in TMLE procedure as a weighted regression instead of
+#' including the clever covariates in the logistic fluctuation model.  Default is \code{TRUE}.
+#' @param outcome_SL.library List of learners to include in the outcome SuperLearner **IF** \code{outcome_method = "SL"}, otherwise ignored.
+#' List of available learners can be viewed using   \code{SuperLearner::listWrappers()}.  May require downloading other R packages.
+#' @param outcome_SL.cvControl List of options to provide to outcome SuperLearner **IF** \code{outcome_method = "SL"}.  The options include
+#' \code{V} (the number of cross validation folds), \code{stratifyCV} (should the cross validation be stratified on the outcome?  Default is \code{TRUE} for binary outcome),
+#' \code{shuffle} (should the data be shuffled?  default is \code{TRUE}), and \code{validRows} (do we want to supply validation data observations?)
+#' @param propensity_SL.library  List of learners to include in the propensity model SuperLearner (note that the propensity is fitted using a SuperLearner by default unless \code{propensity_formula} is supplied)
+#' List of available learners can be viewed using \code{SuperLearner::listWrappers()}.  May require downloading other R packages.
+#' @param parallel Can \code{tlGxE} utilize parallel computing?  Default is \code{TRUE}
+#' @description
+#' Estimates the average treatment effect (ATE) and marginal odds ratio (MOR) marginal causal estimands Targeted Maximum Likelihood Estimation.
+#' @export
+
+
 TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
                 family = c("gaussian", "binomial"),
                 propensity_formula = NULL,

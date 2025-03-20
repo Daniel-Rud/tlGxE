@@ -20,16 +20,21 @@ Imports:
     stats (>= 4.4.1),
     caret (>= 6.0.94),
     glmnet (>= 4.1.8),
-    SuperLearner (>= 2.0.29),
     parallel (>= 4.4.1),
     rpart (>= 4.1.23),
-    bartMachine (>= 1.3.4.1)
+    bartMachine (>= 1.3.4.1), 
+    ggplot2 (>= 3.5.1), 
+    ggpubr (>= 0.6.0),
+    methods (>= 4.4.1), 
+    latex2exp (>= 0.9.6)
 Suggests: 
     coda (>= 0.19.4),
     knitr (>= 1.43),
     rmarkdown (>= 2.23),
     testthat (>= 3.0.0),
     gesso (>= 1.0.2)
+Depends:
+    SuperLearner(>= 2.0.29)
 VignetteBuilder: 
     coda,
     knitr,

@@ -17,7 +17,7 @@ suppress_output <- function(expr) {
 #'
 #' @param Y Outcome vector, should be numeric. Either \eqn{\{0,1\}} vector for \code{family = "binomial"} or a numeric vector for
 #' continuous outcome for \code{family = "gaussian"}
-#' @param A Binary exposure vector, generally a binary \eqn{\{0,1\}} vector.
+#' @param E Binary exposure vector, generally a binary \eqn{\{0,1\}} vector.
 #' @param G Data Frame of size \eqn{n \times g}, where \eqn{g} is the number of candidate SNPs.
 #' \code{G} should contain either the genotyped SNPs in an additive allele encoding
 #' (ie, SNPs data should be 0, 1, or 2 of minor allele) or in an imputed dosage format (probabilistic minor allele count).
@@ -35,7 +35,7 @@ suppress_output <- function(expr) {
 #' @param obs.weights Vector of observation weights.  Default is to set all weights to 1 unless it is indicated that the sampling design is
 #' case control, can be used for custom weighing of observations and overrides any other weights.
 #' @param propensity_scores Optional argument to include pre-computed propensity scores, should be a vector of pre-computed propensity
-#' scores for the exposure of \code{A}.
+#' scores for the exposure of \code{E}.
 #' @param TMLE_args_list A list of arguments controlling the TMLE estimation process. See details below for full description
 #' @param propensity_SL.library  List of learners to include in the propensity model SuperLearner (note that the propensity is fitted using a SuperLearner by default unless \code{propensity_formula} is supplied)
 #' List of available learners can be viewed using \code{SuperLearner::listWrappers()}.  May require downloading other R packages.
@@ -97,7 +97,7 @@ suppress_output <- function(expr) {
 #' \code{shuffle} (should the data be shuffled?  default is \code{TRUE}), and \code{validRows} (do we want to supply validation data observations?).
 #' }
 #' @export
-tlGxE = function(Y, A, G, W = NULL, family = "binomial",
+tlGxE = function(Y, E, G, W = NULL, family = "binomial",
                     case_control_design = F, disease_prevalence = NULL,
                     obs.weights = NULL,
                     propensity_scores = NULL,
@@ -136,13 +136,13 @@ tlGxE = function(Y, A, G, W = NULL, family = "binomial",
   ###########################################
   # Perform Arg Checks
   ###########################################
-  Y = as.numeric(Y); A = as.numeric(A)
+  Y = as.numeric(Y); E = as.numeric(E)
 
   set_list_args = set_arg_lists(TMLE_args_list, propensity_SL.cvControl, family, Y)
   TMLE_args_list = set_list_args[[1]]; propensity_SL.cvControl = set_list_args[[2]]
 
   perform_arg_checks(Y = Y,
-                     A = A,
+                     E = E,
                      G = G,
                      W = W,
                      family = family,
@@ -224,7 +224,7 @@ tlGxE = function(Y, A, G, W = NULL, family = "binomial",
     if(!is.null(propensity_formula))
     {
 
-      full_exposure_data = cbind(A = A, G)
+      full_exposure_data = cbind(E = E, G)
       if(!is.null(W))
       {
         full_exposure_data = cbind(full_exposure_data, W)
@@ -244,7 +244,7 @@ tlGxE = function(Y, A, G, W = NULL, family = "binomial",
       {
         message("Fitting Propensity model using Super Learner...")
       }
-      suppress_output(propensity_scores <- generate_propensity_SL(exposure_data = data.frame(if(is.null(W_propensity)){A}else{cbind(A, W_propensity)}),
+      suppress_output(propensity_scores <- generate_propensity_SL(exposure_data = data.frame(if(is.null(W_propensity)){E}else{cbind(E, W_propensity)}),
                                                                   obs.weights = obs.weights,
                                                                   SL.library = propensity_SL.library,
                                                                   SL.cvControl = propensity_SL.cvControl,
@@ -266,7 +266,7 @@ tlGxE = function(Y, A, G, W = NULL, family = "binomial",
   if(progress == T)
   {
     progressr::with_progress(tmle_results <- tmle_EM_iterator(Y = Y,
-                                                   A = A,
+                                                   E = E,
                                                    G = G,
                                                    W = W,
                                                    propensity_scores = propensity_scores,
@@ -284,7 +284,7 @@ tlGxE = function(Y, A, G, W = NULL, family = "binomial",
   }else
   {
     tmle_results <- tmle_EM_iterator(Y = Y,
-                                     A = A,
+                                     E = E,
                                      G = G,
                                      W = W,
                                      propensity_scores = propensity_scores, family = family,
@@ -314,7 +314,7 @@ tlGxE = function(Y, A, G, W = NULL, family = "binomial",
   return(result_frame)
 }
 
-tmle_EM_iterator = function(Y, A, G, W = NULL,propensity_scores = NULL, family = "binomial",
+tmle_EM_iterator = function(Y, E, G, W = NULL,propensity_scores = NULL, family = "binomial",
                             case_control_design = F, disease_prevalence = NULL,
                             obs.weights = NULL,
                             include_W_outcome = T,
@@ -398,7 +398,7 @@ tmle_EM_iterator = function(Y, A, G, W = NULL,propensity_scores = NULL, family =
       }else
       {
         tmle_mod = TMLE_effect_mod(Y = Y,
-                                   A = A,
+                                   E = E,
                                    effect_modifier = effect_modifier,
                                    W_outcome = W_outcome_curr,
                                    W_exposure = W_exposure_curr,

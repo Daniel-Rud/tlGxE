@@ -174,18 +174,18 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
                     var_MOR_G0 = tmle_E0$MOR_var %>% as.numeric,
                     var_MOR_G1 = tmle_E1$MOR_var %>% as.numeric,
                     var_MOR_G2 = tmle_E2$MOR_var %>% as.numeric,
-                    ATE_EM_F_statistic = ATE_EM_F_statistic,
-                    ATE_EM_pvalue = ATE_EM_pvalue,
-                    MOR_EM_F_statistic = MOR_EM_F_statistic,
-                    MOR_EM_pvalue = MOR_EM_pvalue,
-                    ATE_EM_lin_baseline_est = ATE_EM_lin_baseline_est,
-                    ATE_EM_lin_est = ATE_EM_lin_est,
-                    ATE_EM_lin_Z_stat = ATE_EM_lin_Z_stat,
-                    ATE_EM_lin_pvalue = ATE_EM_lin_pvalue,
-                    MOR_EM_mult_baseline_est = MOR_EM_mult_baseline_est,
-                    MOR_EM_mult_est = MOR_EM_mult_est,
-                    MOR_EM_mult_Z_stat = MOR_EM_mult_Z_stat,
-                    MOR_EM_mult_pvalue =MOR_EM_mult_pvalue)
+                    ATE_codominant_F_statistic = ATE_EM_F_statistic,
+                    ATE_codominant_pvalue = ATE_EM_pvalue,
+                    MOR_codominant_F_statistic = MOR_EM_F_statistic,
+                    MOR_codominant_pvalue = MOR_EM_pvalue,
+                    ATE_additive_baseline_est = ATE_EM_lin_baseline_est,
+                    ATE_additive_lin_est = ATE_EM_lin_est,
+                    ATE_additive_Z_stat = ATE_EM_lin_Z_stat,
+                    ATE_additive_pvalue = ATE_EM_lin_pvalue,
+                    MOR_additive_baseline_est = MOR_EM_mult_baseline_est,
+                    MOR_additive_est = MOR_EM_mult_est,
+                    MOR_additive_Z_stat = MOR_EM_mult_Z_stat,
+                    MOR_additive_pvalue =MOR_EM_mult_pvalue)
 
   return(result_vector)
 }

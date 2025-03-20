@@ -96,12 +96,6 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
                 parallel = F)
 {
 
-  # match args
-  near_positivity_method = match.arg(near_positivity_method,
-                                     choices = c("trim", "rebound"))
-  outcome_method = match.arg(outcome_method,
-                             choices = c("glmnet_int", "glmnet", "gesso", "logistf", "SL"))
-
   # if case control design, check to make sure disease prevalence is specified
   if(case_control_design && is.null(disease_prevalence))
   {
@@ -231,7 +225,7 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
   #######################################################
   # STEP 2: G computation for initial estimates
   #######################################################
-  # binomial and contionuous outcome
+  # binomial and continuous outcome
 
   Q0 = NULL
 
@@ -297,10 +291,10 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
 
     # estimate epsilons
     # again, family is binomial for logistic fluctuation
-    suppressWarnings(epsilon <- stats::glm(Y_star ~ -1 + H_1W + H_0W,
+    suppressWarnings(epsilon <- stats::coef(stats::glm(Y_star ~ -1 + H_1W + H_0W,
                                     offset = offset,
                                     family = binomial,
-                                    weights = obs.weights) %>% stats::coef)
+                                    weights = obs.weights)))
   }else
     # if we choose to put propensity as a weight like IPTW instead of the usual clever covariate
   {
@@ -311,10 +305,10 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
 
     # estimate epsilons
     # again, family is binomial for logistic fluctuation
-    suppressWarnings(epsilon <- stats::glm(Y_star ~ -1 + H_1W + H_0W,
+    suppressWarnings(epsilon <- stats::coef(stats::glm(Y_star ~ -1 + H_1W + H_0W,
                                     offset = offset,
                                     weights = clev_cov_weights*obs.weights, # multiply clever covariate weights and original case control weights
-                                    family = binomial) %>% stats::coef)
+                                    family = binomial)) )
   }
   #######################################################
   # STEP 4: Update Q0AW to Q1AW

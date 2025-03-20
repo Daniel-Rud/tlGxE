@@ -101,7 +101,9 @@ the SNPs in \code{G} (as determined by the \code{SNP_results} argument).  Defaul
 }
 \description{
 Performs \emph{tlGxE} scan over a set of SNPs.  \emph{tlGxE} estimates causal effect modification of the average treatment effect (ATE) and marginal odds ratio (MOR) of
-exposure using targeted learning across disjoint subgroups of observations that have 0, 1, and 2 of a minor allele for a particular SNP. \emph{tlGxE} iterates over a set of candidate SNPs that are included in the input \code{G}, where the argument \code{SNP_results} can be used to perform the analysis on a defined subset from \code{G}.
+exposure using targeted learning across disjoint subgroups of observations that have 0, 1, or 2 of a minor allele for a particular SNP. \emph{tlGxE} iterates over
+a set of candidate SNPs that are included in the input \code{G}, where the argument \code{SNP_results} can be used to perform the analysis only on a subset of
+\code{G}.
 }
 \details{
 Below, please find the specification for the \code{TMLE_args_list} argument.
@@ -110,8 +112,8 @@ Below, please find the specification for the \code{TMLE_args_list} argument.
 \itemize{
 \item \code{outcome_method}: Specification of the outcome model for tlGxE, should be one of
 either "glmnet", "glmnet_int", "gesso", or "SL". "glmnet" corresponds to the elastic net model implemented in the
-\code{glmnet} package, "glmnet_int" corresponds to a non-hierarchical interaction model that includes all main effects for G, E, and
-confounders, along with interactions between A and all covariates in \eqn{\{G, W\}}.  "gesso" fits the hierarchical lasso GxE model described
+\code{glmnet} package, "glmnet_int" corresponds to a non-hierarchical interaction model that includes all main effects for \emph{G}, \emph{E}, and
+confounders, along with interactions between \emp{E} and all covariates in \eqn{\{G, W\}}.  "gesso" fits the hierarchical lasso GxE model described
 in Zemlianskaia et al 2022.  "SL" corresponds to using SuperLearning for the outcome model.  If the "SL" option is specified, the
 SuperLearner can be configured through the \code{outcome_SL.library} and \code{outcome_SL.cvControl} options.
 \item \code{npv_thresh}: numeric value between \eqn{[0, 0.2]} which specifies the near positivity violator threshold, essentially setting
@@ -123,15 +125,15 @@ either removed from the analysis if \code{near_positivity_method = "trim"} or re
 \item \code{nfolds_cv_Q_init}: Number of cross validation folds for the CV-TMLE procedure.  Controls number of cv folds for the outcome model,
 where the outcome model is refitted \code{nfolds_cv_Q_init} times on \code{nfolds_cv_Q_init -1} and the expected outcome is predicted on
 out of fold observations.
-\item \code{nfolds_cv_glmnet_outcome}. Number of cv folds for the outcome model if a
+\item \code{nfolds_cv_glmnet_outcome}: Number of cv folds for the outcome model if a
 \code{glmnet}-based model is used.  If \code{outcome_method = "SL"}, argument is ignored.
-\item \code{alpha_outcome} Numeric alpha parameter if \code{glmnet} model is used.  Alpha should be between \eqn{\[0,1\]} where \eqn{0} corresponds
+\item \code{alpha_outcome}: Numeric alpha parameter if \code{glmnet} model is used.  Alpha should be between \eqn{\[0,1\]} where \eqn{0} corresponds
 to the Ridge Regression,  \eqn{.5} corresponds to the standard Elastic Net, and \eqn{1} corresponds to the LASSO.
-\item \code{clever_cov_propensity_wt}. Option to either include clever covariate in TMLE procedure as a weighted regression instead of
+\item \code{clever_cov_propensity_wt}: Option to either include clever covariate in TMLE procedure as a weighted regression instead of
 including the clever covariates in the logistic fluctuation model.  Default is \code{TRUE}.
-\item \code{outcome_SL.library} List of learners to include in the outcome SuperLearner **IF** \code{outcome_method = "SL"}, otherwise ignored.
+\item \code{outcome_SL.library}: List of learners to include in the outcome SuperLearner **IF** \code{outcome_method = "SL"}, otherwise ignored.
 List of available learners can be viewed using   \code{SuperLearner::listWrappers()}.  May require downloading other R packages.
-\item \code{outcome_SL.cvControl} List of options to provide to outcome SuperLearner **IF** \code{outcome_method = "SL"}.  The options include
+\item \code{outcome_SL.cvControl}: List of options to provide to outcome SuperLearner **IF** \code{outcome_method = "SL"}.  The options include
 \code{V} (the number of cross validation folds), \code{stratifyCV} (should the cross validation be stratified on the outcome?  Default is \code{TRUE} for binary outcome),
 \code{shuffle} (should the data be shuffled?  default is \code{TRUE}), and \code{validRows} (do we want to supply validation data observations?).
 }

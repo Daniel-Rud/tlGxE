@@ -1,3 +1,4 @@
+library(SuperLearner)
 # propensity model with superlearner
 generate_propensity_SL = function(exposure_data,
                                   obs.weights,

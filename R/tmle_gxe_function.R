@@ -133,8 +133,35 @@ tlGxE = function(Y, A, G, W = NULL, family = "binomial",
                     progress = T,
                     verbose = T)
 {
-  # need to do all checks for function params
-  # fill in later
+  ###########################################
+  # Perform Arg Checks
+  ###########################################
+  Y = as.numeric(Y); A = as.numeric(A)
+
+  set_list_args = set_list_args(TMLE_args_list, propensity_SL.cvControl)
+  TMLE_args_list = set_list_args[[1]]; propensity_SL.cvControl = set_list_args[[2]]
+
+  perform_arg_checks(Y = Y,
+                     A = A,
+                     G = G,
+                     W = W,
+                     family = family,
+                     case_control_design = case_control_design,
+                     disease_prevalence = disease_prevalence,
+                     obs.weights = obs.weights,
+                     propensity_scores = propensity_scores,
+                     TMLE_args_list = TMLE_args_list,
+                     propensity_SL.library = propensity_SL.library,
+                     propensity_SL.cvControl = propensity_SL.cvControl,
+                     include_G_propensity = include_G_propensity,
+                     include_W_outcome = include_W_outcome,
+                     propensity_formula = propensity_formula,
+                     outcome_formula = outcome_formula,
+                     SNP_results = SNP_results,
+                     parallel = parallel,
+                     ncores = ncores,
+                     progress = progress,
+                     verbose = verbose)
   ###########################################
 
   # account for when only including a single G

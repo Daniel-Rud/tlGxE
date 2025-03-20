@@ -24,22 +24,6 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                            verbose = F)
 {
 
-  arg_names = c( 'outcome_method',
-                 'npv_thresh',
-                 'near_positivity_method',
-                 'nfolds_cv_Q_init',
-                 'nfolds_cv_glmnet_outcome',
-                 'alpha_outcome',
-                 'clever_cov_propensity_wt',
-                 'outcome_SL.library',
-                 'outcome_SL.cvControl')
-
-  if(!all(arg_names %in% names(TMLE_args_list)))
-  {
-    stop(paste0("TMLE_args_list must be specified with elements for all included arguments in list. One argument may have been missing or misspelled.  Check to see if the following arguments
-               are included: ", paste0(arg_names, collapse = ", ")))
-  }
-
   # put elements of TMLE_args_list in local environment
   list2env(TMLE_args_list,envir = environment())
 

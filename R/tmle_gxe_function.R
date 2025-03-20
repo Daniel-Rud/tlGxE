@@ -138,7 +138,7 @@ tlGxE = function(Y, A, G, W = NULL, family = "binomial",
   ###########################################
   Y = as.numeric(Y); A = as.numeric(A)
 
-  set_list_args = set_arg_lists(TMLE_args_list, propensity_SL.cvControl)
+  set_list_args = set_arg_lists(TMLE_args_list, propensity_SL.cvControl, family, Y)
   TMLE_args_list = set_list_args[[1]]; propensity_SL.cvControl = set_list_args[[2]]
 
   perform_arg_checks(Y = Y,

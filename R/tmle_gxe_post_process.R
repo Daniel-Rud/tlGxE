@@ -147,7 +147,7 @@ plot.tmle_gxe = function(object, ...)
     ggplot2::theme(plot.title = ggplot2::element_text(hjust = 0.5),
           axis.text.x=ggplot2::element_blank(),
           axis.ticks.x=ggplot2::element_blank()) +
-    guides(color = ggplot2::guide_legend(order = 1), shape = ggplot2::guide_legend(order = 2))
+    ggplot2::guides(color = ggplot2::guide_legend(order = 1), shape = ggplot2::guide_legend(order = 2))
 
   #############################################################################
 

@@ -6,7 +6,7 @@
 \usage{
 tlGxE(
   Y,
-  A,
+  E,
   G,
   W = NULL,
   family = "binomial",
@@ -38,7 +38,7 @@ tlGxE(
 \item{Y}{Outcome vector, should be numeric. Either \eqn{\{0,1\}} vector for \code{family = "binomial"} or a numeric vector for
 continuous outcome for \code{family = "gaussian"}}
 
-\item{A}{Binary exposure vector, generally a binary \eqn{\{0,1\}} vector.}
+\item{E}{Binary exposure vector, generally a binary \eqn{\{0,1\}} vector.}
 
 \item{G}{Data Frame of size \eqn{n \times g}, where \eqn{g} is the number of candidate SNPs.
 \code{G} should contain either the genotyped SNPs in an additive allele encoding
@@ -63,7 +63,7 @@ TMLE}
 case control, can be used for custom weighing of observations and overrides any other weights.}
 
 \item{propensity_scores}{Optional argument to include pre-computed propensity scores, should be a vector of pre-computed propensity
-scores for the exposure of \code{A}.}
+scores for the exposure of \code{E}.}
 
 \item{TMLE_args_list}{A list of arguments controlling the TMLE estimation process. See details below for full description}
 

@@ -2,7 +2,7 @@
 
 # function for effect modification
 # effect_modifier should be a numeric 0 1 variable
-TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = NULL,
+TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = NULL,
                            family = "binomial",
                            outcome_formula = NULL,
                            propensity_scores = NULL,
@@ -40,7 +40,7 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
   E1_indices = which(effect_modifier == 1)
   E2_indices = which(effect_modifier == 2)
 
-  tmle_E0 = TMLE(Y = Y[E0_indices], A = A[E0_indices],
+  tmle_E0 = TMLE(Y = Y[E0_indices], A = E[E0_indices],
                  W_outcome = if(is.null(W_outcome)){NULL}else{data.frame(W_outcome)[E0_indices, ]},
                  W_exposure = if(is.null(W_exposure)){NULL}else{data.frame(W_exposure)[E0_indices, ]},
                  family = family,
@@ -59,7 +59,7 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  outcome_SL.library = outcome_SL.library,
                  outcome_SL.cvControl = outcome_SL.cvControl)
 
-  tmle_E1 = TMLE(Y = Y[E1_indices], A = A[E1_indices],
+  tmle_E1 = TMLE(Y = Y[E1_indices], A = E[E1_indices],
                  W_outcome = if(is.null(W_outcome)){NULL}else{data.frame(W_outcome)[E1_indices, ]},
                  W_exposure = if(is.null(W_exposure)){NULL}else{data.frame(W_exposure)[E1_indices, ]},
                  family = family,
@@ -78,7 +78,7 @@ TMLE_effect_mod = function(Y, A,effect_modifier, W_outcome = NULL, W_exposure = 
                  outcome_SL.library = outcome_SL.library,
                  outcome_SL.cvControl = outcome_SL.cvControl)
 
-  tmle_E2 = TMLE(Y = Y[E2_indices], A = A[E2_indices],
+  tmle_E2 = TMLE(Y = Y[E2_indices], A = E[E2_indices],
                  W_outcome = if(is.null(W_outcome)){NULL}else{data.frame(W_outcome)[E2_indices, ]},
                  W_exposure = if(is.null(W_exposure)){NULL}else{data.frame(W_exposure)[E2_indices, ]},
                  family = family,

@@ -1,5 +1,5 @@
 
-perform_arg_checks = function(Y, A, G, W, family, case_control_design,
+perform_arg_checks = function(Y, E, G, W, family, case_control_design,
                               disease_prevalence,  obs.weights,  propensity_scores,
                               TMLE_args_list,  propensity_SL.library,  propensity_SL.cvControl, include_G_propensity,
                               include_W_outcome,  propensity_formula,  outcome_formula,  SNP_results,  parallel,  ncores,  progress,  verbose)
@@ -22,16 +22,16 @@ perform_arg_checks = function(Y, A, G, W, family, case_control_design,
   n = length(Y)
 
   ####################################
-  # A
-  # check if all elemnts of exposure A is 0 1
-  if(sum(!(A %in% c(0,1))) > 0)
+  # E
+  # check if all elemnts of exposure E is 0 1
+  if(sum(!(E %in% c(0,1))) > 0)
   {
-    stop("Exposure variable 'A' MUST be a binary 0 1 vector.")
+    stop("Exposure variable 'E' MUST be a binary 0 1 vector.")
   }
-  # check if A has same length as Y
-  if(length(A) != n)
+  # check if E has same length as Y
+  if(length(E) != n)
   {
-    stop("Size mismatch between 'Y' and 'A' vectors.")
+    stop("Size mismatch between 'Y' and 'E' vectors.")
   }
   ####################################
   # G

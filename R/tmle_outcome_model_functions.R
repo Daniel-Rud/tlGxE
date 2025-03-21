@@ -142,9 +142,9 @@ compute_Superlearner = function(outcome_data, train_ids, test_ids, obs.weights, 
                                           cvControl = outcome_SL.cvControl))
 
 
-  Q0AW = SuperLearner::predict(Q0_mod, newx = X_test, type = "response", onlySL = TRUE)$pred %>% bound_limits(0,1)
-  Q1W = SuperLearner::predict(Q0_mod, newx = cbind(rep(1, nrow(X_test)), X_test[,-1]), onlySL = TRUE)$pred %>% bound_limits(0,1)
-  Q0W = SuperLearner::predict(Q0_mod, newx = cbind(rep(0, nrow(X_test)), X_test[,-1]), onlySL = TRUE)$pred %>% bound_limits(0,1)
+  Q0AW = stats::predict(Q0_mod, newx = X_test, type = "response", onlySL = TRUE)$pred %>% bound_limits(0,1)
+  Q1W = stats::predict(Q0_mod, newx = cbind(rep(1, nrow(X_test)), X_test[,-1]), onlySL = TRUE)$pred %>% bound_limits(0,1)
+  Q0W = stats::predict(Q0_mod, newx = cbind(rep(0, nrow(X_test)), X_test[,-1]), onlySL = TRUE)$pred %>% bound_limits(0,1)
   return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
   return(return_list)
 }

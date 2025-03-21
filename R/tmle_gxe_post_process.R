@@ -12,12 +12,12 @@
 #' be changed to account for multiple testing.
 #' @export
 
-plot.tmle_gxe = function(object, ...)
+plot.tlGxE = function(object, ...)
 {
   # check for fgwqsr object
-  if(!methods::is(object, "tmle_gxe"))
+  if(!methods::is(object, "tlGxE"))
   {
-    stop("Must pass the object output of the tmle_gxe() function.")
+    stop("Must pass the object output of the tlGxE() function.")
   }
 
   passed_args = list(...)

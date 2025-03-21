@@ -153,7 +153,7 @@ plot.tlGxE = function(object, ...)
 
   plot = ggpubr::ggarrange(ATE_aov_plot, ATE_linear_plot,
                            MOR_aov_plot, MOR_mult_plot,
-                           nrow = 2, ncol = 2)
+                           nrow = 2, ncol = 2, common.legend = TRUE, legend = "bottom")
 
   return(plot)
 }

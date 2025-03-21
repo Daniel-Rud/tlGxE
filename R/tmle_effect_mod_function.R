@@ -183,7 +183,7 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
                     ATE_additive_Z_stat = ATE_EM_lin_Z_stat,
                     ATE_additive_pvalue = ATE_EM_lin_pvalue,
                     MOR_additive_baseline_est = MOR_EM_mult_baseline_est,
-                    MOR_additive_est = MOR_EM_mult_est,
+                    MOR_additive_mult_est = MOR_EM_mult_est,
                     MOR_additive_Z_stat = MOR_EM_mult_Z_stat,
                     MOR_additive_pvalue =MOR_EM_mult_pvalue)
 

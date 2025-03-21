@@ -283,8 +283,10 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
                                      E = E,
                                      G = G,
                                      W = W,
-                                     propensity_scores = propensity_scores, family = family,
-                                     case_control_design = case_control_design, disease_prevalence = disease_prevalence,
+                                     propensity_scores = propensity_scores,
+                                     family = family,
+                                     case_control_design = case_control_design,
+                                     disease_prevalence = disease_prevalence,
                                      obs.weights = obs.weights,
                                      include_W_outcome = include_W_outcome,
                                      outcome_formula = outcome_formula,
@@ -299,12 +301,18 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
   result_frame = do.call(cbind, tmle_results)
   if(!is.null(result_frame))
   {
-    colnames(result_frame) = if(is.null(colnames(G))){paste0("SNP_", SNP_results)}else{colnames(G)[SNP_results]}
+    if(is.null(colnames(G)))
+    {
+      colnames(result_frame) = paste0("SNP_", SNP_results)
+    }else
+    {
+      colnames(result_frame) = colnames(G)[SNP_results]
+    }
   }
 
   if(!is.null(result_frame))
   {
-    class(result_frame) = "tmle_gxe"
+    class(result_frame) = "tlGxE"
   }
 
   return(result_frame)

@@ -232,6 +232,11 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
   # if outcome formula is specified
   if(!is.null(outcome_formula))
   {
+    # reformulate -- tlGxE says to use Y ~ E + ... as the outcome model specification
+    rhs_terms = attr(terms(outcome_formula), "term.labels")
+    rhs_terms[1] = "A"  # Replace the first term with "A"
+    outcome_formula = reformulate(rhs_terms, response = all.vars(outcome_formula)[1])
+
     full_outcome_data = data.frame(Y = Y_star, A = A)
     if(!is.null(W_outcome))
     {

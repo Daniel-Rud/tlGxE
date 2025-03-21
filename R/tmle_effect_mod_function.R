@@ -28,8 +28,14 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
   list2env(TMLE_args_list,envir = environment())
 
   # match args
-  outcome_method = match.arg(outcome_method,
-                             choices = c("glmnet_int", "glmnet", "gesso", "logistf", "SL"))
+  if(length(outcome_method) >= 1)
+  {
+    outcome_method = "glmnet"
+  }else
+  {
+    outcome_method = match.arg(outcome_method,
+                               choices = c("glmnet_int", "glmnet", "gesso", "SL"))
+  }
 
   near_positivity_method = match.arg(near_positivity_method, c("trim", "rebound"))
 

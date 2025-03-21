@@ -113,7 +113,7 @@ Below, please find the specification for the \code{TMLE_args_list} argument.
 \item \code{outcome_method}: Specification of the outcome model for tlGxE, should be one of
 either "glmnet", "glmnet_int", "gesso", or "SL". "glmnet" corresponds to the elastic net model implemented in the
 \code{glmnet} package, "glmnet_int" corresponds to a non-hierarchical interaction model that includes all main effects for \emph{G}, \emph{E}, and
-confounders, along with interactions between \emp{E} and all covariates in \eqn{\{G, W\}}.  "gesso" fits the hierarchical lasso GxE model described
+confounders, along with interactions between \emph{E} and all covariates in \eqn{\{G, W\}}.  "gesso" fits the hierarchical lasso GxE model described
 in Zemlianskaia et al 2022.  "SL" corresponds to using SuperLearning for the outcome model.  If the "SL" option is specified, the
 SuperLearner can be configured through the \code{outcome_SL.library} and \code{outcome_SL.cvControl} options.
 \item \code{npv_thresh}: numeric value between \eqn{[0, 0.2]} which specifies the near positivity violator threshold, essentially setting
@@ -123,11 +123,11 @@ determined by observations that have extreme propensity (with respect to the \co
 either removed from the analysis if \code{near_positivity_method = "trim"} or rebounded to the maximum allowable propensity
 (either npv_thresh or 1-npv_thresh) if \code{near_positivity_method = "rebound"}.
 \item \code{nfolds_cv_Q_init}: Number of cross validation folds for the CV-TMLE procedure.  Controls number of cv folds for the outcome model,
-where the outcome model is refitted \code{nfolds_cv_Q_init} times on \code{nfolds_cv_Q_init -1} and the expected outcome is predicted on
-out of fold observations.
+where the outcome model is refitted \code{nfolds_cv_Q_init} times on \code{nfolds_cv_Q_init -1} data folds and the expected outcome is predicted on the
+out-of-fold observations.
 \item \code{nfolds_cv_glmnet_outcome}: Number of cv folds for the outcome model if a
 \code{glmnet}-based model is used.  If \code{outcome_method = "SL"}, argument is ignored.
-\item \code{alpha_outcome}: Numeric alpha parameter if \code{glmnet} model is used.  Alpha should be between \eqn{\[0,1\]} where \eqn{0} corresponds
+\item \code{alpha_outcome}: Numeric alpha parameter if \code{glmnet} model is used.  Alpha should be between \eqn{[0,1]} where \eqn{0} corresponds
 to the Ridge Regression,  \eqn{.5} corresponds to the standard Elastic Net, and \eqn{1} corresponds to the LASSO.
 \item \code{clever_cov_propensity_wt}: Option to either include clever covariate in TMLE procedure as a weighted regression instead of
 including the clever covariates in the logistic fluctuation model.  Default is \code{TRUE}.

@@ -256,7 +256,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
 
   if(verbose == T)
   {
-    message("Fitting tmle_GxE models...")
+    message("Iterating tlGxE over SNPs in `G`...")
   }
 
   if(progress == T)

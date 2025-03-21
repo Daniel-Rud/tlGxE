@@ -181,10 +181,6 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
     }
   }
 
-  if(case_control_design && is.null(disease_prevalence))
-  {
-    stop("Outcome prevalence must be supplied if case control design.")
-  }
 
   # initialize observation weights
 
@@ -301,7 +297,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
 
 
   result_frame = do.call(cbind, tmle_results)
-  if(num_G > 1 && !is.null(result_frame))
+  if(!is.null(result_frame))
   {
     colnames(result_frame) = if(is.null(colnames(G))){paste0("SNP_", SNP_results)}else{colnames(G)[SNP_results]}
   }

@@ -47,8 +47,8 @@ plot.tmle_gxe = function(object, ...)
 
   # ATE pvalue plot
 
-  ATE_aov_pvalues = result_frame["ATE_EM_pvalue", ]
-  ATE_lin_pvalues = result_frame["ATE_EM_lin_pvalue", ]
+  ATE_aov_pvalues = result_frame["ATE_codominant_pvalue", ]
+  ATE_lin_pvalues = result_frame["ATE_additive_pvalue", ]
 
   ATE_signif_aov = ifelse(-1*log(ATE_aov_pvalues, base = 10) < sig_lvl, 0, 1) %>% factor
   ATE_signif_lin = ifelse(-1*log(ATE_lin_pvalues, base = 10) < sig_lvl, 0, 1) %>% factor
@@ -103,8 +103,8 @@ plot.tmle_gxe = function(object, ...)
   # MOR estimate plot
   # MOR pvalue plot
 
-  MOR_aov_pvalues = result_frame["MOR_EM_pvalue", ]
-  MOR_mult_pvalues = result_frame["MOR_EM_mult_pvalue", ]
+  MOR_aov_pvalues = result_frame["MOR_codominant_pvalue", ]
+  MOR_mult_pvalues = result_frame["MOR_additive_pvalue", ]
 
   MOR_signif_aov = ifelse(-1*log(MOR_aov_pvalues, base = 10) < sig_lvl, 0, 1) %>% factor
   MOR_signif_mult = ifelse(-1*log(MOR_mult_pvalues, base = 10) < sig_lvl, 0, 1) %>% factor

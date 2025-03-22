@@ -35,11 +35,18 @@ devtools::install_github("Daniel-Rud/tlGxE")
 #> Downloading GitHub repo Daniel-Rud/tlGxE@HEAD
 #> clock (0.7.2 -> 0.7.3) [CRAN]
 #> Installing 1 packages: clock
-#> 
-#> The downloaded binary packages are in
-#>  /var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T//RtmpKt2l0H/downloaded_packages
+#> Warning in download.file(url, destfile, method, mode = "wb", ...): downloaded
+#> length 0 != reported length 279
+#> Warning in download.file(url, destfile, method, mode = "wb", ...): cannot open
+#> URL
+#> 'https://cloud.r-project.org/bin/macosx/big-sur-arm64/contrib/4.4/clock_0.7.2.tgz':
+#> HTTP status was '404 Not Found'
+#> Error in download.file(url, destfile, method, mode = "wb", ...) : 
+#>   cannot open URL 'https://cloud.r-project.org/bin/macosx/big-sur-arm64/contrib/4.4/clock_0.7.2.tgz'
+#> Warning in download.packages(pkgs, destdir = tmpd, available = available, :
+#> download of package 'clock' failed
 #> ── R CMD build ─────────────────────────────────────────────────────────────────
-#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpKt2l0H/remotes16c63498cbccc/Daniel-Rud-tlgxe-17ad63a/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpKt2l0H/remotes16c63498cbccc/Daniel-Rud-tlgxe-17ad63a/DESCRIPTION’
+#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmprCqA3D/remotes179de55a6c551/Daniel-Rud-tlgxe-7b445b7/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmprCqA3D/remotes179de55a6c551/Daniel-Rud-tlgxe-7b445b7/DESCRIPTION’
 #>   ─  preparing ‘tlGxE’:
 #>      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
 #>   ─  checking for LF line-endings in source and make files and shell scripts

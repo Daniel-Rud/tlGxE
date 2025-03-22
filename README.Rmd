@@ -154,8 +154,8 @@ The model output contains (in the rows):
 * {`var_MOR_G0`, `var_MOR_G1`, `var_MOR_G2`}: Variance estimates of the MORs within subgroups of individuals who have 0, 1, or 2 of the minor allele for the analyzed SNP.
 * {`ATE_codominant_F_statistic`, `ATE_codominant_pvalue`}: The F-statistic and p-value for codominant causal effect modification testing of the ATE.
 * {`MOR_codominant_F_statistic`, `MOR_codominant_pvalue`}:  The F-statistic and p-value for codominant causal effect modification testing of the MOR
-* {`ATE_additive_baseline_est`, `ATE_additive_lin_est`, `ATE_additive_pvalue`}: The estimated baseline ATE for the `SNP = 0` subgroup, along with the estimated additive effect of a one unit minor allele increase on ATE; p-value testing for significance of the additive ATE effect.  The null hypothesis for the test is that $H_0: \text{ATE\_additive\_lin\_est} = 0$.
-* {`MOR_additive_baseline_est`, `MOR_additive_mult_est`, `MOR_additive_pvalue`}: The baseline and estimated multiplicative MOR for the additive model, along with the p-value testing for significance of the additive MOR effect. The null hypothesis for the test is that $H_0: \text{MOR\_additive\_mult\_est} = 1$.  
+* {`ATE_additive_baseline_est`, `ATE_additive_lin_est`, `ATE_additive_pvalue`}: The estimated baseline ATE for the `SNP = 0` subgroup, along with the estimated additive effect of a one unit minor allele increase on ATE; p-value testing for significance of the additive ATE effect.  The null hypothesis for the test is that $H_0:$ ATE_additive_lin_est $= 0$.
+* {`MOR_additive_baseline_est`, `MOR_additive_mult_est`, `MOR_additive_pvalue`}: The baseline and estimated multiplicative MOR for the additive model, along with the p-value testing for significance of the additive MOR effect. The null hypothesis for the test is that $H_0:$ MOR_additive_mult_est $= 1$.  
 
 To plot the results of four causal effect modification tests using a manhattan-like plot, we can use the `plot` function 
 

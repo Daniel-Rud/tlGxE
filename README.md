@@ -25,7 +25,7 @@ the iterated outcome models. Below, we illustrate several examples using
 
 ## Installation
 
-You can install the development version of tlGxE from
+You can install the development version of `tlGxE` from
 [GitHub](https://github.com/) with:
 
 ``` r
@@ -33,20 +33,9 @@ You can install the development version of tlGxE from
 devtools::install_github("Daniel-Rud/tlGxE")
 #> Using github PAT from envvar GITHUB_PAT. Use `gitcreds::gitcreds_set()` and unset GITHUB_PAT in .Renviron (or elsewhere) if you want to use the more secure git credential store instead.
 #> Downloading GitHub repo Daniel-Rud/tlGxE@HEAD
-#> clock (0.7.2 -> 0.7.3) [CRAN]
-#> Installing 1 packages: clock
-#> Warning in download.file(url, destfile, method, mode = "wb", ...): downloaded
-#> length 0 != reported length 279
-#> Warning in download.file(url, destfile, method, mode = "wb", ...): cannot open
-#> URL
-#> 'https://cloud.r-project.org/bin/macosx/big-sur-arm64/contrib/4.4/clock_0.7.2.tgz':
-#> HTTP status was '404 Not Found'
-#> Error in download.file(url, destfile, method, mode = "wb", ...) : 
-#>   cannot open URL 'https://cloud.r-project.org/bin/macosx/big-sur-arm64/contrib/4.4/clock_0.7.2.tgz'
-#> Warning in download.packages(pkgs, destdir = tmpd, available = available, :
-#> download of package 'clock' failed
+#> 
 #> ── R CMD build ─────────────────────────────────────────────────────────────────
-#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmprCqA3D/remotes179de55a6c551/Daniel-Rud-tlgxe-7b445b7/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmprCqA3D/remotes179de55a6c551/Daniel-Rud-tlgxe-7b445b7/DESCRIPTION’
+#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpZEuis7/remotes9934de95479/Daniel-Rud-tlgxe-d4a5642/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpZEuis7/remotes9934de95479/Daniel-Rud-tlgxe-d4a5642/DESCRIPTION’
 #>   ─  preparing ‘tlGxE’:
 #>      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
 #>   ─  checking for LF line-endings in source and make files and shell scripts
@@ -273,13 +262,13 @@ The model output contains (in the rows):
   `ATE_additive_pvalue`}: The estimated baseline ATE for the `SNP = 0`
   subgroup, along with the estimated additive effect of a one unit minor
   allele increase on ATE; p-value testing for significance of the
-  additive ATE effect. The null hypothesis for the test is that
-  $H_0: \text{ATE\_additive\_lin\_est} = 0$.
+  additive ATE effect. The null hypothesis for the test is that $H_0:$
+  ATE_additive_lin_est $= 0$.
 - {`MOR_additive_baseline_est`, `MOR_additive_mult_est`,
   `MOR_additive_pvalue`}: The baseline and estimated multiplicative MOR
   for the additive model, along with the p-value testing for
   significance of the additive MOR effect. The null hypothesis for the
-  test is that $H_0: \text{MOR\_additive\_mult\_est} = 1$.
+  test is that $H_0:$ MOR_additive_mult_est $= 1$.
 
 To plot the results of four causal effect modification tests using a
 manhattan-like plot, we can use the `plot` function

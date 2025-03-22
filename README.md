@@ -15,14 +15,13 @@ of an exposure by SNP genotype (0, 1, or 2 of a minor allele) in both
 average treatment effect (ATE) and marginal odds ratio (MOR) scales
 using codominant and additive (linear contrast) testing procedures. As
 the method utilizes targeted learning, `tlGxE` accommodates the use of
-data adaptive and flexible machine learning methods to be incorporated
-into the estimation of exposure and outcome mechanisms, allowing for
-more unbiased estimation. Use of ensembles of such flexible models,
-referred to as SuperLearning in the targeted learning procedure, is
-performed by default in the global propensity model of `tlGxE` and can
-optionally be performed in the iterated outcome models. Below, we
-illustrate an example using `tlGxE` and hope that you find use for the
-method in your analyses!
+data adaptive and flexible machine learning methods in the estimation of
+exposure and outcome mechanisms, allowing for less biased estimation.
+Use of ensembles of such flexible models, referred to as *SuperLearning*
+in the targeted learning literature, is performed by default in the
+global propensity model of `tlGxE` and can optionally be performed in
+the iterated outcome models. Below, we illustrate several examples using
+`tlGxE` and hope that you find use for the method in your analyses!
 
 ## Installation
 
@@ -33,8 +32,22 @@ You can install the development version of tlGxE from
 #install.packages("devtools")
 devtools::install_github("Daniel-Rud/tlGxE")
 #> Using github PAT from envvar GITHUB_PAT. Use `gitcreds::gitcreds_set()` and unset GITHUB_PAT in .Renviron (or elsewhere) if you want to use the more secure git credential store instead.
-#> Skipping install of 'tlGxE' from a github remote, the SHA1 (ee4941b7) has not changed since last install.
-#>   Use `force = TRUE` to force installation
+#> Downloading GitHub repo Daniel-Rud/tlGxE@HEAD
+#> clock (0.7.2 -> 0.7.3) [CRAN]
+#> Installing 1 packages: clock
+#> 
+#> The downloaded binary packages are in
+#>  /var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T//RtmpKt2l0H/downloaded_packages
+#> ── R CMD build ─────────────────────────────────────────────────────────────────
+#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpKt2l0H/remotes16c63498cbccc/Daniel-Rud-tlgxe-17ad63a/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpKt2l0H/remotes16c63498cbccc/Daniel-Rud-tlgxe-17ad63a/DESCRIPTION’
+#>   ─  preparing ‘tlGxE’:
+#>      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
+#>   ─  checking for LF line-endings in source and make files and shell scripts
+#>   ─  checking for empty or unneeded directories
+#>    Omitted ‘LazyData’ from DESCRIPTION
+#>   ─  building ‘tlGxE_0.1.0.tar.gz’
+#>      
+#> 
 ```
 
 # Example
@@ -105,7 +118,7 @@ logit_pi_i =  exposure_int +
   B_cohort_2 * I(cohort == 2) + B_cohort_3 * I(cohort == 3) + B_cohort_4 * I(cohort == 4) 
 
 E = rbinom(n, 1, plogis(logit_pi_i))
-mean(E) # 0.49
+mean(E) 
 #> [1] 0.465
 
 #################################################################
@@ -124,19 +137,18 @@ Y = outcome_int +
   rnorm(n, resid_sd)
 ```
 
-## Using tlGxE – Simple Example
+## Using tlGxE – First Example
 
-To run tlGxE, we will need to specify the outcome `Y`, the exposure
+To run `tlGxE`, we will need to specify the outcome `Y`, the exposure
 variable `E`, and the SNP matrix (or dataframe) `G`. In addition, we can
 supply a data frame or matrix of confounders `W` that are in a numeric
-coding. We will first demonstrate running `tlGxE` without superlearning
+coding. We will first demonstrate running `tlGxE` without SuperLearning
 in the outcome model and will use a `glmnet` outcome model. `tlGxE` uses
-superlearning in the global propensity model, by default. We will first
-show a simple illustration of the method, and then discuss all the
-tuning parameters.
+SuperLearning in the global propensity model, by default.
 
 Notice that, because our cohort variable is a factor variable, we will
-create a dummy variable encoding using the `model.matrix` function.
+need to use the `model.matrix` function to create a confounder matrix
+that creates the dummy variables for factor variables.
 
 ``` r
 library(tlGxE)
@@ -163,34 +175,39 @@ tlGxE_1 = tlGxE(Y = Y, E = E, G = G,
 )
 #> Fitting Propensity model using Super Learner...
 #> Loading required namespace: glmnet
-#> Fitting tmle_GxE models...
+#> Iterating tlGxE over SNPs in `G`...
 ```
 
-A few notes on the parameters included: *TMLE_args_list: +
-`outcome_method`: Can supply one of the following: `"glmnet"`,
-`"glmnet_int"`, `"gesso"`, `"SL"` for the outcome model specification.
-The first three models are penalized regression models, where `"glmnet"`
-corresponds to a main effect glmnet model, `"glmnet_int"` a
-non-hierarchical interaction model that includes all main effects for
-adjusting variables, along with interactions between exposure `E` and
-all adjusting covariates, and `"gesso"` computes the hierarchical lasso
-GxE model described in Zemlianskaia et al 2022. “SL” corresponds to
-using SuperLearning, where the SuperLearner can be configured through
-the `outcome_SL.library` and `outcome_SL.cvControl` options. +
-`nfolds_cv_Q_init`: Controls the number of cross validation folds for
-the CV-TMLE in the initial outcome model. + `nfolds_cv_glmnet_outcome`:
-Controls the number of cross validation folds for fitting the outcome
-model *IF\* the outcome model is not `SL`. If the outcome model is `SL`,
-then the cross validation folds can be set in the `outcome_SL.cvControl`
-parameter.  
-+ `alpha_outcome`: Controls the `alpha` parameter in `glmnet`, which
-corresponds to the mixing between the ridge and lasso penalties.
-\*`propensity_SL.library`: Defines the learners to use in the
-SuperLearner. Can see available learners using
-`SuperLearner::listWrappers()`
+A few notes on the parameters included:
 
-\*`propensity_SL.cvControl`: Options to control the cross validation for
-the propensity model (see `tlGxE` documentation).
+- `TMLE_args_list`:
+
+  - `outcome_method`: Can supply one of the following: `"glmnet"`,
+    `"glmnet_int"`, `"gesso"`, `"SL"` for the outcome model
+    specification. The first three models are penalized regression
+    models, where `"glmnet"` corresponds to a main effect glmnet model,
+    `"glmnet_int"` a non-hierarchical interaction model that includes
+    all main effects for adjusting variables, along with interactions
+    between exposure `E` and all adjusting covariates, and `"gesso"`
+    computes the hierarchical lasso GxE model described in Zemlianskaia
+    et al 2022. “SL” corresponds to using SuperLearning, where the
+    SuperLearner can be configured through the `outcome_SL.library` and
+    `outcome_SL.cvControl` options.
+  - `nfolds_cv_Q_init`: Controls the number of cross validation folds
+    for the CV-TMLE in the initial outcome model.
+  - `nfolds_cv_glmnet_outcome`: Controls the number of cross validation
+    folds for fitting the outcome model *IF* the outcome model is not
+    `SL`. If the outcome model is `SL`, then the cross validation folds
+    can be set in the `outcome_SL.cvControl` parameter.  
+  - `alpha_outcome`: Controls the `alpha` parameter in `glmnet`, which
+    corresponds to the mixing between the ridge and lasso penalties.
+
+- `propensity_SL.library`: Defines the learners to use in the
+  SuperLearner. Can see available learners using
+  `SuperLearner::listWrappers()`
+
+- `propensity_SL.cvControl`: Options to control the cross validation for
+  the propensity model (see `tlGxE` documentation).
 
 Lets look at the first column of the matrix returned from the `tlGxE`
 call.
@@ -222,33 +239,40 @@ tlGxE_1[,1,drop = F] %>% round(8)
 #> MOR_additive_pvalue          0.00000000
 ```
 
-The model output contains (in the rows): \* {`ATE_G0`, `ATE_G1`,
-`ATE_G2`}: The estimated ATEs within subgroups of individuals who have
-0, 1, or 2 of the minor allele for the analyzed SNP. \* {`var_ATE_G0`,
-`var_ATE_G1`, `var_ATE_G2`}: Variance estimates of the ATEs within
-subgroups of individuals who have 0, 1, or 2 of the minor allele for the
-analyzed SNP. \* {`MOR_G0`, `MOR_G1`, `MOR_G2`}: The estimated MOR
-within subgroups of individuals who have 0, 1, or 2 of the minor allele
-for the analyzed SNP. *{`MOR_G0`, `MOR_G1`, `MOR_G2`}: The estimated MOR
-within subgroups of individuals who have 0, 1, or 2 of the minor allele
-for the analyzed SNP. *{`var_MOR_G0`, `var_MOR_G1`, `var_MOR_G2`}:
-Variance estimates of the MORs within subgroups of individuals who have
-0, 1, or 2 of the minor allele for the analyzed SNP.
-*{`ATE_codominant_F_statistic`, `ATE_codominant_pvalue`}: The
-F-statistic and p-value for codominant causal effect modification
-testing of the ATE. *{`MOR_codominant_F_statistic`,
-`MOR_codominant_pvalue`}: The F-statistic and p-value for codominant
-causal effect modification testing of the MOR
-*{`ATE_additive_baseline_est`, `ATE_additive_lin_est`,
-`ATE_additive_pvalue`}: The estimated baseline ATE for the `SNP = 0`
-subgroup, along with the estimated additive effect of a one unit minor
-allele increase on ATE; p-value testing for significance of the additive
-ATE effect. The null hypothesis for the test is that
-$H_0: \text{ATE_additive_lin_est} = 0$. *{`MOR_additive_baseline_est`,
-`MOR_additive_mult_est`, `MOR_additive_pvalue`}: The baseline and
-estimated multiplicative MOR for the additive model, along with the
-p-value testing for significance of the additive MOR effect. The null
-hypothesis for the test is that $H_0: \text{MOR_additive_mult_est} = 1$.
+The model output contains (in the rows):
+
+- {`ATE_G0`, `ATE_G1`, `ATE_G2`}: The estimated ATEs within subgroups of
+  individuals who have 0, 1, or 2 of the minor allele for the analyzed
+  SNP.
+- {`var_ATE_G0`, `var_ATE_G1`, `var_ATE_G2`}: Variance estimates of the
+  ATEs within subgroups of individuals who have 0, 1, or 2 of the minor
+  allele for the analyzed SNP.
+- {`MOR_G0`, `MOR_G1`, `MOR_G2`}: The estimated MOR within subgroups of
+  individuals who have 0, 1, or 2 of the minor allele for the analyzed
+  SNP.
+- {`MOR_G0`, `MOR_G1`, `MOR_G2`}: The estimated MOR within subgroups of
+  individuals who have 0, 1, or 2 of the minor allele for the analyzed
+  SNP.
+- {`var_MOR_G0`, `var_MOR_G1`, `var_MOR_G2`}: Variance estimates of the
+  MORs within subgroups of individuals who have 0, 1, or 2 of the minor
+  allele for the analyzed SNP.
+- {`ATE_codominant_F_statistic`, `ATE_codominant_pvalue`}: The
+  F-statistic and p-value for codominant causal effect modification
+  testing of the ATE.
+- {`MOR_codominant_F_statistic`, `MOR_codominant_pvalue`}: The
+  F-statistic and p-value for codominant causal effect modification
+  testing of the MOR
+- {`ATE_additive_baseline_est`, `ATE_additive_lin_est`,
+  `ATE_additive_pvalue`}: The estimated baseline ATE for the `SNP = 0`
+  subgroup, along with the estimated additive effect of a one unit minor
+  allele increase on ATE; p-value testing for significance of the
+  additive ATE effect. The null hypothesis for the test is that
+  $H_0: \text{ATE\_additive\_lin\_est} = 0$.
+- {`MOR_additive_baseline_est`, `MOR_additive_mult_est`,
+  `MOR_additive_pvalue`}: The baseline and estimated multiplicative MOR
+  for the additive model, along with the p-value testing for
+  significance of the additive MOR effect. The null hypothesis for the
+  test is that $H_0: \text{MOR\_additive\_mult\_est} = 1$.
 
 To plot the results of four causal effect modification tests using a
 manhattan-like plot, we can use the `plot` function
@@ -298,31 +322,34 @@ SuperLearner::listWrappers()
 Let us specify our global propensity model to include {`SL.glmnet`,
 `SL.rpart`, `SL.bartMachine`, `SL.glm`} and our outcome model to include
 {`SL.glmnet`, `SL.gam` }. In addition, we will specify the following
-choices: \* `include_G_propensity = T`: We will include all SNPs in G
-into the estimation of the global propensity model (default only
-considers including the confounders in W). One of the considerations
-whether we would like to include `G` in the propensity is that if `G` is
-high dimensional, we will need to use learners that can accommodate
-`G`’s size. If we rely on the *doubly robustness* property of targeted
-maximum likelihood estimation and choose simpler adjustments for
-including `G` in the outcome model, we can specify a more data adaptive
-propensity model that better estimates the exposure mechanism as a
-function of just the confounders in `W`. This is a tradeoff of course,
-and the user is welcome to specify accordingly to their desired
-analysis. \* `include_W_outcome = T`: We will include all confounders in
-the outcome model. This option can be set to false if we only wish to
-include the confounder adjustment in the propensity model, which can be
-done by leveraging the *doubly robustness* property of targeted maximum
-likelihood estimation. The default is set to `TRUE`, since the
-confounder set is generally small in comparison to `G`, which can be
-large. The advantage of including `W` in the outcome model is that we
-will have two chances to correctly specify the confounder-exposure or
-confounder-outcome mechanisms (if either correct, we will have unbiased
-estimation).  
-\* `SNP_results = 1:3`: We choose to only perform the scan for the first
-3 SNPs. Still, all SNPs in G (aside for the current SNP) are adjusted
-for in the estimation; however, column indices of `G` not included in
-`SNP_results` will not have `tlGxE` iterated over it.
+choices:
+
+- `include_G_propensity = T`: We will include all SNPs in G into the
+  estimation of the global propensity model (default only considers
+  including the confounders in W). One of the considerations whether we
+  would like to include `G` in the propensity is that if `G` is high
+  dimensional, we will need to use learners that can accommodate `G`’s
+  size. If we rely on the *doubly robustness* property of targeted
+  maximum likelihood estimation and choose simpler adjustments for
+  including `G` in the outcome model, we can specify a more data
+  adaptive propensity model that better estimates the exposure mechanism
+  as a function of just the confounders in `W`. This is a tradeoff of
+  course, and the user is welcome to specify accordingly to their
+  desired analysis.
+- `include_W_outcome = T`: We will include all confounders in the
+  outcome model. This option can be set to false if we only wish to
+  include the confounder adjustment in the propensity model, which can
+  be done by leveraging the *doubly robustness* property of targeted
+  maximum likelihood estimation. The default is set to `TRUE`, since the
+  confounder set is generally small in comparison to `G`, which can be
+  large. The advantage of including `W` in the outcome model is that we
+  will have two chances to correctly specify the confounder-exposure or
+  confounder-outcome mechanisms (if either correct, we will have
+  unbiased estimation).  
+- `SNP_results = 1:3`: We choose to only perform the scan for the first
+  3 SNPs. Still, all SNPs in G (aside for the current SNP) are adjusted
+  for in the estimation; however, column indices of `G` not included in
+  `SNP_results` will not have `tlGxE` iterated over it.
 
 ``` r
 tlGxE_2 = tlGxE(Y = Y, E = E, G = G, 
@@ -337,13 +364,14 @@ tlGxE_2 = tlGxE(Y = Y, E = E, G = G,
                 include_W_outcome = T, 
                 SNP_results = 1:3)
 #> Fitting Propensity model using Super Learner...
-#> Fitting tmle_GxE models...
+#> Iterating tlGxE over SNPs in `G`...
 
 plot(tlGxE_2, alpha = 5*10^-8)
 ```
 
-<img src="man/figures/README-unnamed-chunk-8-1.png" width="100%" /> \##
-Using Custom Formulas for Global Propensity and Outcome Models
+<img src="man/figures/README-unnamed-chunk-8-1.png" width="100%" />
+
+## Using Custom Formulas for Global Propensity and Outcome Models
 
 If the user has a good understanding of either or both of the exposure
 and outcome mechanisms, they can supply the functional relationship
@@ -386,8 +414,6 @@ is needed due to how `tlGxE` internally references these variables. See
 below a specification of the outcome formula.
 
 ``` r
-
-
 tlGxE_3 = tlGxE(Y = Y, E = E, G = G, 
                 W = W, 
                 family = "gaussian", 
@@ -396,12 +422,13 @@ tlGxE_3 = tlGxE(Y = Y, E = E, G = G,
                 include_G_propensity = T,
                 include_W_outcome = T, 
                 SNP_results = 1:3)
-#> Fitting tmle_GxE models...
+#> Iterating tlGxE over SNPs in `G`...
 
 plot(tlGxE_3, alpha = 5*10^-8)
 ```
 
 <img src="man/figures/README-unnamed-chunk-9-1.png" width="100%" />
+
 There are many tuning parameters in `tlGxE`. Please refer to the
 documentation of `tlGxE` to see all the functionalities of the method.
 Note that many of the tuning parameters control the different cross
@@ -414,31 +441,30 @@ validation).
 ## Estimating ATE / MOR under additive assumption
 
 Under the assumption of additivity of effect modification per one minor
-allele increase, one can produce estimates for
-$(\text{ATE}_{0}, \text{ATE}_{1} \text{ATE}_{2})$
-$(\text{MOR}_{0}, \text{MOR}_{1} \text{MOR}_{2})$ across the subgroups
-with 0, 1, and 2 of the minor allele. We can compute these estimates
-according to the following for a single SNP (we do for S1):
+allele increase, one can produce estimates for (ATE_0, ATE_1, ATE_2) and
+(MOR_0, MOR_1, MOR_2) across the subgroups with 0, 1, and 2 of the minor
+allele. We can compute these estimates according to the following for a
+single SNP (we do for S1):
 
-\*ATE: Because we assume additivity of effect modification in the
-original scale, we can compute
+- **ATE**: Because we assume additivity of effect modification in the
+  original scale, we can compute
 
 ``` r
 ATEs_under_additivity = c(ATE_0 = tlGxE_1["ATE_additive_baseline_est","S1"], ATE_1 = tlGxE_1["ATE_additive_baseline_est","S1"] + tlGxE_1["ATE_additive_lin_est","S1"], ATE_2 = tlGxE_1["ATE_additive_baseline_est","S1"] + 2*tlGxE_1["ATE_additive_lin_est","S1"])
-ATEs_under_additivity
-#>    ATE_0    ATE_1    ATE_2 
-#> 1.529405 3.997104 6.464804
+ATEs_under_additivity %>% round(3)
+#> ATE_0 ATE_1 ATE_2 
+#> 1.529 3.997 6.465
 ```
 
-- MOR: Because we assume additivity of effect modification in the log
-  linear scale, we need to multiply the baseline MOR by the estimated
-  effect modification multiplicative factor as shown:
+- **MOR**: Because we assume additivity of effect modification in the
+  log linear scale, we need to multiply the baseline MOR by the
+  estimated effect modification multiplicative factor as shown:
 
 ``` r
 MORs_under_additivity = c(MOR_0 = tlGxE_1["MOR_additive_baseline_est","S1"], MOR_1 = tlGxE_1["MOR_additive_baseline_est","S1"] * tlGxE_1["MOR_additive_mult_est","S1"], MOR_2 = tlGxE_1["MOR_additive_baseline_est","S1"]*tlGxE_1["MOR_additive_mult_est","S1"]^2)
-MORs_under_additivity
-#>     MOR_0     MOR_1     MOR_2 
-#> 0.9919936 0.9839198 0.9759117
+MORs_under_additivity %>% round(3)
+#> MOR_0 MOR_1 MOR_2 
+#> 0.992 0.984 0.976
 ```
 
 Note here that the MOR is not very meaningful for the continuous

@@ -48,11 +48,11 @@ into dummy variables, consider using the \code{model.matrix()} function and remo
 
 \item{family}{One of either "binomial" or "gaussian" for binary or continuous outcomes respectively}
 
-\item{propensity_formula}{Option to include a formula for the propensity model to fit a generalized linear model.  **NOTE:** when creating a
+\item{propensity_formula}{Option to include a formula for the propensity model to fit a generalized linear model.  \strong{NOTE:} when creating a
 formula, refer to the exposure variable as \code{A} irregardless of its true name.  Confounders can be references through their columnnames
 in the \code{W_exposure} dataframe.}
 
-\item{outcome_formula}{Option to include a formula for the outcome model to fit a generalized linear model.  **NOTE:** when creating a
+\item{outcome_formula}{Option to include a formula for the outcome model to fit a generalized linear model.  \strong{NOTE:} when creating a
 formula, refer to the outcome variable as \code{Y} and the exposure variable as \code{A} irregardless of their true names.
 Confounders can be references through their columnnames in the \code{W_outcome} dataframe.}
 
@@ -100,10 +100,10 @@ including the clever covariates in the logistic fluctuation model.  Default is \
 \item{propensity_SL.library}{List of learners to include in the propensity model SuperLearner (note that the propensity is fitted using a SuperLearner by default unless \code{propensity_formula} is supplied)
 List of available learners can be viewed using \code{SuperLearner::listWrappers()}.  May require downloading other R packages.}
 
-\item{outcome_SL.library}{List of learners to include in the outcome SuperLearner **IF** \code{outcome_method = "SL"}, otherwise ignored.
+\item{outcome_SL.library}{List of learners to include in the outcome SuperLearner \strong{IF} \code{outcome_method = "SL"}, otherwise ignored.
 List of available learners can be viewed using   \code{SuperLearner::listWrappers()}.  May require downloading other R packages.}
 
-\item{outcome_SL.cvControl}{List of options to provide to outcome SuperLearner **IF** \code{outcome_method = "SL"}.  The options include
+\item{outcome_SL.cvControl}{List of options to provide to outcome SuperLearner \strong{IF} \code{outcome_method = "SL"}.  The options include
 \code{V} (the number of cross validation folds), \code{stratifyCV} (should the cross validation be stratified on the outcome?  Default is \code{TRUE} for binary outcome),
 \code{shuffle} (should the data be shuffled?  default is \code{TRUE}), and \code{validRows} (do we want to supply validation data observations?)}
 

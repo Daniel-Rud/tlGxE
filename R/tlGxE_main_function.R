@@ -26,8 +26,8 @@ suppress_output <- function(expr) {
 #' @param W Data Frame of \eqn{n \times p}, where p is the number of confounders/adjusting variables.
 #' Columns of \code{W} should only include numeric vectors.  If categorical variables are used in the analysis and are not already recoded
 #' into dummy variables, consider using the \code{model.matrix()} function and removing the intercept column (usually the first column)
-#' @param family One of either "binomial" or "gaussian" for binary or continuous outcomes respectively
-#' @param case_control_design Boolean, If outcome is binary and data comes from a case control sampling design, should be set to \code{TRUE}.
+#' @param family One of either \code{"binomial"} or \code{"gaussian"} for binary or continuous outcomes respectively
+#' @param case_control_design Boolean, if outcome is binary and data comes from a case control sampling design, should be set to \code{TRUE}.
 #' In addition, the user must supply the estimated disease prevalence in the \code{disease_prevalence} argument.  This is because
 #' the TMLE procedure is not robust to biased sampling designs and must instead account for this bias through a case control weighted
 #' TMLE
@@ -45,11 +45,11 @@ suppress_output <- function(expr) {
 #' @param include_G_propensity Option to include all SNPs in \code{G} in the propensity model.  Default is \code{FALSE}.  If set to \code{TRUE}, one should use
 #' learners in the SuperLearner that can accommodate the dimension of the data.
 #' @param include_W_outcome Option to include all confounders/adjusting variables defined in \code{W} in the outcome model.  Default is \code{TRUE}.
-#' @param propensity_formula Option to include a formula for the propensity model to fit a generalized linear model.  **NOTE:** when creating a
-#' formula, refer to the exposure variable as \code{E} irregardless of its true name.  Confounders can be references through their columnnames
+#' @param propensity_formula Option to include a formula for the propensity model to fit a generalized linear model.  \strong{NOTE:} when creating a
+#' formula, refer to the exposure variable as \code{A} irregardless of its true name.  Confounders can be references through their columnnames
 #' in the \code{W} dataframe, and elements from \code{G} can be included similarly if \code{include_G_propensity = TRUE}.
-#' @param outcome_formula Option to include a formula for the outcome model to fit a generalized linear model.  **NOTE:** when creating a
-#' formula, refer to the outcome variable as \code{Y} and the exposure variable as \code{E} irregardless of their true names.  Confounders can be references through their columnnames
+#' @param outcome_formula Option to include a formula for the outcome model to fit a generalized linear model.  \strong{NOTE:} when creating a
+#' formula, refer to the outcome variable as \code{Y} and the exposure variable as \code{A} irregardless of their true names.  Confounders can be references through their columnnames
 #' in the \code{G} dataframe, and elements from \code{W} can be included similarly if \code{include_W_propensity = TRUE}.
 #' @param SNP_results Option to specify a subset of SNPs to iterate over.  If desired, a vector of column indices corresponding to the SNPs of interest
 #' should be provided.  Default is to iterate over all SNPs in \code{G}
@@ -65,7 +65,7 @@ suppress_output <- function(expr) {
 #' \code{G}.
 #'
 #' @details
-#' Please see the vignette available at \url{https://github.com/Daniel-Rud/tlgxe} for details on using \code{tlGxE} with guided examples.
+#' Please see the guided examples of \code{tlGxE} usage in the vignette at \url{https://github.com/Daniel-Rud/tlgxe}.
 #'
 #' Below, please find the specification for the \code{TMLE_args_list} argument.
 #'
@@ -92,9 +92,9 @@ suppress_output <- function(expr) {
 #' to the Ridge Regression,  \eqn{.5} corresponds to the standard Elastic Net, and \eqn{1} corresponds to the LASSO.
 #' \item \code{clever_cov_propensity_wt}: Option to either include clever covariate in TMLE procedure as a weighted regression instead of
 #' including the clever covariates in the logistic fluctuation model.  Default is \code{TRUE}.
-#' \item \code{outcome_SL.library}: List of learners to include in the outcome SuperLearner **IF** \code{outcome_method = "SL"}, otherwise ignored.
+#' \item \code{outcome_SL.library}: List of learners to include in the outcome SuperLearner \strong{IF} \code{outcome_method = "SL"}, otherwise ignored.
 #' List of available learners can be viewed using   \code{SuperLearner::listWrappers()}.  May require downloading other R packages.
-#' \item \code{outcome_SL.cvControl}: List of options to provide to outcome SuperLearner **IF** \code{outcome_method = "SL"}.  The options include
+#' \item \code{outcome_SL.cvControl}: List of options to provide to outcome SuperLearner \strong{IF} \code{outcome_method = "SL"}.  The options include
 #' \code{V} (the number of cross validation folds), \code{stratifyCV} (should the cross validation be stratified on the outcome?  Default is \code{TRUE} for binary outcome),
 #' \code{shuffle} (should the data be shuffled?  default is \code{TRUE}), and \code{validRows} (do we want to supply validation data observations?).
 #' }

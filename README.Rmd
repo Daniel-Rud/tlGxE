@@ -34,21 +34,23 @@ devtools::install_github("Daniel-Rud/tlGxE")
 
 # Example 
 
-`tlGxE` estimates causal effect modification, which is usually measures using marginal quantities such as the ATE and the MOR.  As it is well known that marginal and conditional odds ratios may not coincide due to the non-collapsibility of the odds ratio, we perform our simulations using a continuous outcome without any exposure confounder interactions.  This way, our data generation process is more friendly to analyze.  
+We will illustrate several examples of `tlGxE` using binary outcome, where causal effect modification in both the ATE and MOR scales is assessed.  For continuous outcomes, `tlGxE` assesses causal effect modification only in the scale of the ATE.  
 
 ## Data Generation 
-For our purpose, we will generate a set of 10 SNPs all having minor allele frequency of MAF = 0.3.  In addition, we will specify an exposure variable `E` that depends on three confounders `age`, `sex`, `cohort` such that the overall propensity of exposure is close to 0.5.  Finally, we can specify an outcome model that includes the interaction between the first SNP and `A`, as well as adjusting for the other confounders. 
+For our purpose, we will generate a set of 10 SNPs all having minor allele frequency of MAF = 0.3.  In addition, we will specify an exposure variable `E` that depends on three confounders `age`, `sex`, `cohort` such that the overall propensity of exposure is close to 0.5.  Finally, we can specify an outcome model that includes the interaction between the first SNP and `A`, as well as adjusting for the other confounders. The outcome prevalence in this case is around 0.34.  
 
 
 ```{r}
 if (!require(mvtnorm)) install.packages("mvtnorm", dependencies = TRUE) # for mvtnorm
 if (!require(magrittr)) install.packages("magrittr", dependencies = TRUE); library(magrittr) # for %>%
 
-set.seed(1) # for reproducibility
+set.seed(2025) # for reproducibility
 #################################################################
 # Generate SNP Data 
 #################################################################
-n = 2000
+
+generate_data = function(n)
+{
 n_snp = 10
 SNP_MAF = rep(0.3, n_snp)
 snp_data = mvtnorm::rmvnorm(n = n, mean = rep(0,n_snp))
@@ -81,7 +83,7 @@ cohort = sample(1:4, size = n, prob = c(.3, .1, .4,.2), replace = T) %>% factor
 #################################################################
 B_age = 0.025; B_sex = .5
 B_cohort_2 = -.2; B_cohort_3 = .15; B_cohort_4 = -.2
-exposure_int = -1.5
+exposure_int = -1.3
 
 logit_pi_i =  exposure_int + 
   B_age * age + B_sex * sex + 
@@ -93,18 +95,86 @@ mean(E)
 #################################################################
 # Generate Outcome Model 
 #################################################################
-B_E = 1.5; B_G = c(rep(.25, 5), rep(-.25, 5)); B_GE = 2.5
-B_age = 0.075; B_sex = -1.2
-B_cohort_2 = 1.3; B_cohort_3 = 2.4; B_cohort_4 = -1.8
-outcome_int = -5.5
-resid_sd = 16
+B_E = .5; B_G = c(rep(.25, 5), rep(-.25, 5)); B_GE = .6
+B_age = 0.025; B_sex = -1.2
+B_cohort_2 = .8; B_cohort_3 = 1.1; B_cohort_4 = -.9
+outcome_int = -2.2
 
-Y = outcome_int + 
-  G %*% B_G  + B_E * E  + B_GE * E * G[,1] + 
+# generate probability of exposure when exposed: E = 1
+pi_i_E1 = (outcome_int + 
+  G %*% B_G  + B_E  + B_GE * G[,1] + 
   B_age * age + B_sex * sex + 
-  B_cohort_2 * I(cohort == 2) + B_cohort_3 * I(cohort == 3) + B_cohort_4 * I(cohort == 4) + 
-  rnorm(n, resid_sd)
+  B_cohort_2 * I(cohort == 2) + B_cohort_3 * I(cohort == 3) + B_cohort_4 * I(cohort == 4)) %>% plogis 
+
+# generate probability of exposure when not exposed: E = 0
+pi_i_E0 = (outcome_int + 
+  G %*% B_G  + 
+  B_age * age + B_sex * sex + 
+  B_cohort_2 * I(cohort == 2) + B_cohort_3 * I(cohort == 3) + B_cohort_4 * I(cohort == 4)) %>% plogis 
+
+# Counterfactual outcomes
+Y_1 = rbinom(length(pi_i_E1), 1, pi_i_E1)
+Y_0 = rbinom(length(pi_i_E0), 1, pi_i_E0)
+
+# True observed outcome
+Y = E * Y_1 + (1-E)*Y_0
+cat(mean(Y))
+
+return(data.frame(Y, E, G, age, sex, cohort))
+}
+
 ```
+
+We can see what the true ATE and MORs are across the SNPs
+
+```{r}
+
+# G computation function 
+
+gcomp = function(outcome_data, formula, family = "binomial")
+{
+  
+  # outcome model 
+  Q0_mod = glm(formula = formula, data = outcome_data, family = family)
+  
+  # create G comp datasets 
+  gcomp_copy_1 = outcome_data; gcomp_copy_0 = outcome_data
+  gcomp_copy_1$E = 1; gcomp_copy_0$E = 0
+  
+  # perform G Computation
+  suppressWarnings(Q0AW <- predict(Q0_mod, type = "response"))
+  suppressWarnings(Q1W <- predict(Q0_mod, newdata = gcomp_copy_1, type = "response"))
+  suppressWarnings(Q0W <- predict(Q0_mod, newdata = gcomp_copy_0, type = "response"))
+  
+  # Compute marginal estimands 
+  m1 = mean(Q1W); m0 = mean(Q0W)
+  ATE = m1 - m0; MOR = ((m1)/(1-m1))/(m0 / (1-m0))
+  return(c(true_ATE = ATE,true_MOR = MOR))
+}
+
+# Create a large dataset 
+
+
+outcome_data = generate_data(500000)
+formula = Y ~ E + S2 + S3 + S4 + S5 + S6 + S7 + S8 + S9 + S10 + age + sex + cohort
+
+# S1 = 0 
+S1_0 = gcomp(outcome_data = subset(outcome_data, S1 == 0), formula = formula, family = "binomial")
+# S1 = 1
+S1_1 = gcomp(outcome_data = subset(outcome_data, S1 == 1), formula = formula, family = "binomial")
+# S1 = 2 
+S1_2 = gcomp(outcome_data = subset(outcome_data, S1 == 2), formula = formula, family = "binomial")
+
+true_ACEs = rbind(S1_0 = S1_0,S1_1 = S1_1, S1_2 = S1_2)
+true_ACEs
+```
+
+For the purpose of our example, we will create a smaller dataset with `n = 2,000` observations 
+
+```{r}
+outcome_data = generate_data(2000)
+```
+
 
 ## Using tlGxE -- First Example
 
@@ -114,11 +184,11 @@ Notice that, because our cohort variable is a factor variable, we will need to u
 
 ```{r}
 library(tlGxE)
-W = model.matrix(~ age + sex + cohort, data = data.frame(age, sex, cohort))[,-1]
+W = model.matrix(~ age + sex + cohort, data = outcome_data)[,-1]
 
-tlGxE_1 = tlGxE(Y = Y, E = E, G = G, 
+tlGxE_1 = tlGxE(Y = outcome_data$Y, E = outcome_data$E, G = outcome_data[,3:12], 
                 W = W, 
-                family = "gaussian", 
+                family = "binomial", 
                 TMLE_args_list = list(outcome_method = c("glmnet"),
                                       nfolds_cv_Q_init = 10,
                                       nfolds_cv_glmnet_outcome = 5, 
@@ -131,10 +201,10 @@ tlGxE_1 = tlGxE(Y = Y, E = E, G = G,
 A few notes on the parameters included: 
 
 * `TMLE_args_list`: 
-  + `outcome_method`: Can supply one of the following: `"glmnet"`, `"glmnet_int"`, `"gesso"`, `"SL"` for the outcome model specification.  The first three models are penalized regression models, where `"glmnet"` corresponds to a main effect glmnet model, `"glmnet_int"` a non-hierarchical interaction model that includes all main effects for adjusting variables, along with interactions between exposure `E` and all adjusting covariates, and `"gesso"` computes the hierarchical lasso GxE model described in Zemlianskaia et al 2022. "SL" corresponds to using SuperLearning, where the SuperLearner can be configured through the `outcome_SL.library` and `outcome_SL.cvControl` options.
+  + `outcome_method`: Can supply one of the following: `"glmnet"`, `"glmnet_int"`, `"gesso"`, `"SL"` for the outcome model specification.  The first three models included in the list are penalized regression models, where `"glmnet"` corresponds to a main effect glmnet model, `"glmnet_int"` a non-hierarchical interaction model that includes all main effects for adjusting variables, along with interactions between exposure `E` and all adjusting covariates, and `"gesso"` computes the hierarchical lasso GxE model described in Zemlianskaia et al 2022. "SL" corresponds to using SuperLearning, where the SuperLearner can be configured through the `outcome_SL.library` and `outcome_SL.cvControl` options.
   + `nfolds_cv_Q_init`: Controls the number of cross validation folds for the CV-TMLE in the initial outcome model. 
   + `nfolds_cv_glmnet_outcome`: Controls the number of cross validation folds for fitting the outcome model *IF* the outcome model is not `SL`.  If the outcome model is `SL`, then the cross validation folds can be set in the `outcome_SL.cvControl` parameter.  
-  + `alpha_outcome`: Controls the `alpha` parameter in `glmnet`, which corresponds to the mixing between the ridge and lasso penalties. 
+  + `alpha_outcome`: Controls the `alpha` parameter in `glmnet`, which corresponds to the mixing between the ridge and lasso penalties (0: ridge; 0.5: standard elastic net; 1: LASSO). 
 * `propensity_SL.library`: Defines the learners to use in the SuperLearner.  Can see available learners using `SuperLearner::listWrappers()`
 
 * `propensity_SL.cvControl`: Options to control the cross validation for the propensity model (see `tlGxE` documentation).  
@@ -160,13 +230,24 @@ The model output contains (in the rows):
 To plot the results of four causal effect modification tests using a manhattan-like plot, we can use the `plot` function 
 
 ```{r}
-plot(tlGxE_1, alpha = 5*10^-8)
+# bonferroni corrected -- illustration
+alpha = 0.05 / 10
+plot(tlGxE_1, alpha = alpha)
+```
+
+We can compare the estimates of the ATEs and the MORs to the true values estimated on the large dataset.  
+
+```{r}
+cbind(true_ATEs = true_ACEs[,1], 
+      tlGxE_ATEs = tlGxE_1[1:3,1], 
+      true_MORs = true_ACEs[,2], 
+      tlGxE_MORs = tlGxE_1[7:9,1])
 ```
 
 
-## A more involved tlGxE model -- Parameter tuning 
+## A more involved tlGxE model -- Custom SuperLearning 
 
-`tlGxE` offers quite a few options in terms of customizing the estimation of the global propensity model and the outcome models.  In this example, we will use a more comprehensive list of parameters to estimate a `tlGxE` model and describe the parameter configuration.  In this model, we will specify both a super learner for the global propensity and outcome models.  First, to see what models are available in the superlearner, we can use the following `listWrappers()` function in the SuperLearner package 
+`tlGxE` offers quite a few options in terms of customizing the estimation of the global propensity model and the outcome models.  In this model, we will specify both a super learner for the global propensity and outcome models.  First, to see what models are available in the SuperLearner, we can use the following `listWrappers()` function in the `SuperLearner` package 
 
 ```{r}
 SuperLearner::listWrappers()
@@ -179,9 +260,9 @@ Let us specify our global propensity model to include \{`SL.glmnet`, `SL.rpart`,
 * `SNP_results = 1:3`:  We choose to only perform the scan for the first 3 SNPs.  Still, all SNPs in G (aside for the current SNP) are adjusted for in the estimation; however, column indices of `G` not included in `SNP_results` will not have `tlGxE` iterated over it.  
 
 ```{r}
-tlGxE_2 = tlGxE(Y = Y, E = E, G = G, 
+tlGxE_2 = tlGxE(Y = outcome_data$Y, E = outcome_data$E, G = outcome_data[,3:12], 
                 W = W, 
-                family = "gaussian", 
+                family = "binomial", 
                 TMLE_args_list = list(outcome_method = c("SL"),
                                       outcome_SL.library = c("SL.glmnet",
                                                              "SL.gam")),
@@ -191,7 +272,8 @@ tlGxE_2 = tlGxE(Y = Y, E = E, G = G,
                 include_W_outcome = T, 
                 SNP_results = 1:3)
 
-plot(tlGxE_2, alpha = 5*10^-8)
+alpha = 0.05/10
+plot(tlGxE_2, alpha = alpha)
 ```
 
 ## Using Custom Formulas for Global Propensity and Outcome Models 
@@ -207,16 +289,16 @@ If the user has a good understanding of either or both of the exposure and outco
 
 
 ```{r}
-tlGxE_3 = tlGxE(Y = Y, E = E, G = G, 
+tlGxE_3 = tlGxE(Y = outcome_data$Y, E = outcome_data$E, G = outcome_data[,3:12], 
                 W = W, 
-                family = "gaussian", 
+                family = "binomial", 
                 propensity_formula = E ~ I(log(age)) + sex + cohort2 + cohort3 + cohort4 + S10, 
                 outcome_formula = Y ~  E + age + sex + cohort2 + cohort3 + cohort4 + I(S8^2) + S10,
                 include_G_propensity = T,
                 include_W_outcome = T, 
                 SNP_results = 1:3)
-
-plot(tlGxE_3, alpha = 5*10^-8)
+alpha = 0.05/10
+plot(tlGxE_3, alpha = alpha)
 ```
 
 There are many tuning parameters in `tlGxE`.  Please refer to the documentation of `tlGxE` to see all the functionalities of the method.  Note that many of the tuning parameters control the different cross validation schemes for different parts of `tlGxE`.  Cross validation takes place in the SuperLearner of the global propensity model, the CV-TMLE for the outcome model, and for the estimation of the outcome model (if SuperLearner is used, another nested level of cross validation).  
@@ -236,10 +318,10 @@ ATEs_under_additivity %>% round(3)
 MORs_under_additivity = c(MOR_0 = tlGxE_1["MOR_additive_baseline_est","S1"], MOR_1 = tlGxE_1["MOR_additive_baseline_est","S1"] * tlGxE_1["MOR_additive_mult_est","S1"], MOR_2 = tlGxE_1["MOR_additive_baseline_est","S1"]*tlGxE_1["MOR_additive_mult_est","S1"]^2)
 MORs_under_additivity %>% round(3)
 ```
-Note here that the MOR is not very meaningful for the continuous outcome, but is arguably the more meaningful measure of average causal effect for binary outcomes.  
 
+# Conclusion / Bug Reporting
 
-
+Thank you very much for checking out `tlGxE`!  Please report any bugs as an issue [here](https://github.com/Daniel-Rud/tlGxE/issues). 
 
 
 

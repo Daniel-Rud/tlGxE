@@ -258,7 +258,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
 
   if(verbose == T)
   {
-    message("Iterating tlGxE over SNPs in `G`...")
+    message("Iterating tlGxE over SNPs in G...")
   }
 
   if(progress == T)

@@ -119,16 +119,6 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
 
   ATE_EM_pvalue = ATE_welch_aov$p_value
 
-  # Perform anova for MOR results
-
-  MOR_welch_aov = welch_anova(means = c(tmle_E0$MOR, tmle_E1$MOR, tmle_E2$MOR),
-                              var_means = c(tmle_E0$MOR_var, tmle_E1$MOR_var, tmle_E2$MOR_var),
-                              sample_sizes = c(n0, n1, n2))
-
-  MOR_EM_F_statistic = MOR_welch_aov$F_statistic
-
-  MOR_EM_pvalue = MOR_welch_aov$p_value
-
   # 1 df linear ATE test
   m0 = tmle_E0$ATE
   m1 = tmle_E1$ATE
@@ -146,28 +136,44 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
   ATE_EM_lin_Z_stat = ATE_linear_results$Z_EM
   ATE_EM_lin_pvalue = ATE_linear_results$pvalue
 
+  # only computer MOR stuff if binary outcome
+  if(family == "binomial")
+  {
 
-  # EM for MOR 1 df in log scale
+    # Perform anova for MOR results
 
-  # apply delta method to variance estimates
-  # var* = var* 1/MOR^2
+    MOR_welch_aov = welch_anova(means = c(tmle_E0$MOR, tmle_E1$MOR, tmle_E2$MOR),
+                                var_means = c(tmle_E0$MOR_var, tmle_E1$MOR_var, tmle_E2$MOR_var),
+                                sample_sizes = c(n0, n1, n2))
 
-  m0 = tmle_E0$MOR %>% log
-  m1 = tmle_E1$MOR %>% log
-  m2 = tmle_E2$MOR %>% log
+    MOR_EM_F_statistic = MOR_welch_aov$F_statistic
 
-  var_0 = tmle_E0$MOR_var / (tmle_E0$MOR)^2
-  var_1 = tmle_E1$MOR_var / (tmle_E1$MOR)^2
-  var_2 = tmle_E2$MOR_var / (tmle_E2$MOR)^2
+    MOR_EM_pvalue = MOR_welch_aov$p_value
 
-  MOR_linear_results = linear_EM_test(m0 = m0, m1 = m1, m2 = m2,
-                                      var_m0 = var_0, var_m1 = var_1, var_m2 = var_2)
 
-  MOR_EM_mult_baseline_est = MOR_linear_results$EM_lin_baseline %>% exp
-  MOR_EM_mult_est = MOR_linear_results$EM_hat %>% exp
-  MOR_EM_mult_Z_stat = MOR_linear_results$Z_EM
-  MOR_EM_mult_pvalue = MOR_linear_results$pvalue
+    # EM for MOR 1 df in log scale
+    # apply delta method to variance estimates
+    # var* = var* 1/MOR^2
 
+    m0 = tmle_E0$MOR %>% log
+    m1 = tmle_E1$MOR %>% log
+    m2 = tmle_E2$MOR %>% log
+
+    var_0 = tmle_E0$MOR_var / (tmle_E0$MOR)^2
+    var_1 = tmle_E1$MOR_var / (tmle_E1$MOR)^2
+    var_2 = tmle_E2$MOR_var / (tmle_E2$MOR)^2
+
+    MOR_linear_results = linear_EM_test(m0 = m0, m1 = m1, m2 = m2,
+                                        var_m0 = var_0, var_m1 = var_1, var_m2 = var_2)
+
+    MOR_EM_mult_baseline_est = MOR_linear_results$EM_lin_baseline %>% exp
+    MOR_EM_mult_est = MOR_linear_results$EM_hat %>% exp
+    MOR_EM_mult_Z_stat = MOR_linear_results$Z_EM
+    MOR_EM_mult_pvalue = MOR_linear_results$pvalue
+  }
+
+  if(family == "binomial")
+  {
   result_vector = c(ATE_G0 = tmle_E0$ATE %>% as.numeric,
                     ATE_G1 = tmle_E1$ATE %>% as.numeric,
                     ATE_G2 = tmle_E2$ATE %>% as.numeric,
@@ -192,6 +198,21 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
                     MOR_additive_mult_est = MOR_EM_mult_est,
                     MOR_additive_Z_stat = MOR_EM_mult_Z_stat,
                     MOR_additive_pvalue =MOR_EM_mult_pvalue)
+  }else
+  {
+    result_vector = c(ATE_G0 = tmle_E0$ATE %>% as.numeric,
+                      ATE_G1 = tmle_E1$ATE %>% as.numeric,
+                      ATE_G2 = tmle_E2$ATE %>% as.numeric,
+                      var_ATE_G0 = tmle_E0$ATE_var %>% as.numeric,
+                      var_ATE_G1 = tmle_E1$ATE_var %>% as.numeric,
+                      var_ATE_G2 = tmle_E2$ATE_var %>% as.numeric,
+                      ATE_codominant_F_statistic = ATE_EM_F_statistic,
+                      ATE_codominant_pvalue = ATE_EM_pvalue,
+                      ATE_additive_baseline_est = ATE_EM_lin_baseline_est,
+                      ATE_additive_lin_est = ATE_EM_lin_est,
+                      ATE_additive_Z_stat = ATE_EM_lin_Z_stat,
+                      ATE_additive_pvalue = ATE_EM_lin_pvalue)
+  }
 
   return(result_vector)
 }

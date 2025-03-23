@@ -186,7 +186,7 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
     environment(propensity_formula) = environment()
 
     PS = stats::glm(formula = propensity_formula, data = full_exposure_data,
-             weights = obs.weights, family = "binomial") %>%
+                    weights = obs.weights, family = "binomial") %>%
       stats::predict(type = "response")
 
   }else # otherwise compute propensity scores with superlearner
@@ -254,7 +254,7 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
 
     # family is binomial because we always use logistic fluctuation
     suppressWarnings(outcome_model <- stats::glm(formula = outcome_formula, data = full_outcome_data,
-             weights = obs.weights, family = "binomial") )
+                                                 weights = obs.weights, family = "binomial") )
 
     Q0AW = outcome_model %>% stats::predict(type = "response")
     Q1W = outcome_model %>% stats::predict(newdata = full_outcome_data %>% dplyr::mutate(A = 1),   type = "response")
@@ -297,9 +297,9 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
     # estimate epsilons
     # again, family is binomial for logistic fluctuation
     suppressWarnings(epsilon <- stats::coef(stats::glm(Y_star ~ -1 + H_1W + H_0W,
-                                    offset = offset,
-                                    family = binomial,
-                                    weights = obs.weights)))
+                                                       offset = offset,
+                                                       family = binomial,
+                                                       weights = obs.weights)))
   }else
     # if we choose to put propensity as a weight like IPTW instead of the usual clever covariate
   {
@@ -311,9 +311,9 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
     # estimate epsilons
     # again, family is binomial for logistic fluctuation
     suppressWarnings(epsilon <- stats::coef(stats::glm(Y_star ~ -1 + H_1W + H_0W,
-                                    offset = offset,
-                                    weights = clev_cov_weights*obs.weights, # multiply clever covariate weights and original case control weights
-                                    family = binomial)) )
+                                                       offset = offset,
+                                                       weights = clev_cov_weights*obs.weights, # multiply clever covariate weights and original case control weights
+                                                       family = binomial)) )
   }
   #######################################################
   # STEP 4: Update Q0AW to Q1AW
@@ -349,7 +349,10 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
   EY0_tmle = stats::weighted.mean(Q1_0W, obs.weights)
 
   ATE_tmle = EY1_tmle - EY0_tmle
-  MOR_tmle = (EY1_tmle / (1-EY1_tmle)) / (EY0_tmle / (1-EY0_tmle))
+  if(family == "binomial")
+  {
+    MOR_tmle = (EY1_tmle / (1-EY1_tmle)) / (EY0_tmle / (1-EY0_tmle))
+  }
 
   #######################################################
   # Step 6: Inference for Estimates
@@ -369,16 +372,19 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
   ATE_pvalue = 2*(1-stats::pnorm(abs(ATE_tmle / sqrt(Var_EIC_ATE))))
 
   # MOR EIC
+  if(family == "binomial")
+  {
 
-  EIC_MOR = (((1 - EY0_tmle) / (EY0_tmle * (1-EY1_tmle)^2)) * D1 -
-    (EY1_tmle / ((1 - EY1_tmle) * EY0_tmle^2))* D0)*obs.weights
-  Var_EIC_MOR = var(EIC_MOR) / length(Y)
+    EIC_MOR = (((1 - EY0_tmle) / (EY0_tmle * (1-EY1_tmle)^2)) * D1 -
+                 (EY1_tmle / ((1 - EY1_tmle) * EY0_tmle^2))* D0)*obs.weights
+    Var_EIC_MOR = var(EIC_MOR) / length(Y)
 
-  MOR_CI = c("2.5%" = MOR_tmle - qZ*sqrt(Var_EIC_MOR),
-             "97.5%" = MOR_tmle + qZ*sqrt(Var_EIC_MOR))
-  MOR_pvalue = 2*(1-stats::pnorm(abs((MOR_tmle - 1) / sqrt(Var_EIC_MOR))))
+    MOR_CI = c("2.5%" = MOR_tmle - qZ*sqrt(Var_EIC_MOR),
+               "97.5%" = MOR_tmle + qZ*sqrt(Var_EIC_MOR))
+    MOR_pvalue = 2*(1-stats::pnorm(abs((MOR_tmle - 1) / sqrt(Var_EIC_MOR))))
+  }
 
-  # include untargeted MOR
+  # include untargeted ACEs
 
   m1 = 0
   m0 = 0
@@ -395,22 +401,38 @@ TMLE = function(Y, A, W_outcome = NULL, W_exposure = NULL,
   }
 
   ATE_untargeted = m1 - m0
-  MOR_untargeted = (m1 * (1-m0)) / ((1-m1) * m0)
+  if(family == "binomial")
+  {
+    MOR_untargeted = (m1 * (1-m0)) / ((1-m1) * m0)
+  }
 
-  result_list = list(
-    ATE = ATE_tmle,
-    ATE_var = Var_EIC_ATE,
-    ATE_CI_2.5 = ATE_CI[1],
-    ATE_CI_97.5 = ATE_CI[2],
-    ATE_pvalue = ATE_pvalue,
-    ATE_untargeted = ATE_untargeted,
-    MOR = MOR_tmle,
-    MOR_var = Var_EIC_MOR,
-    MOR_CI_2.5 = MOR_CI[1],
-    MOR_CI_97.5 = MOR_CI[2],
-    MOR_pvalue = MOR_pvalue,
-    MOR_untargeted = MOR_untargeted
-  )
+  if(family == "binomial")
+  {
+    result_list = list(
+      ATE = ATE_tmle,
+      ATE_var = Var_EIC_ATE,
+      ATE_CI_2.5 = ATE_CI[1],
+      ATE_CI_97.5 = ATE_CI[2],
+      ATE_pvalue = ATE_pvalue,
+      ATE_untargeted = ATE_untargeted,
+      MOR = MOR_tmle,
+      MOR_var = Var_EIC_MOR,
+      MOR_CI_2.5 = MOR_CI[1],
+      MOR_CI_97.5 = MOR_CI[2],
+      MOR_pvalue = MOR_pvalue,
+      MOR_untargeted = MOR_untargeted
+    )
+  }else
+  {
+    result_list = list(
+      ATE = ATE_tmle,
+      ATE_var = Var_EIC_ATE,
+      ATE_CI_2.5 = ATE_CI[1],
+      ATE_CI_97.5 = ATE_CI[2],
+      ATE_pvalue = ATE_pvalue,
+      ATE_untargeted = ATE_untargeted
+    )
+  }
 
   return(result_list)
 }

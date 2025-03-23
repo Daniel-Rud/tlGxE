@@ -240,7 +240,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
     {
       if(verbose == T)
       {
-        message("Fitting Propensity model using Super Learner...")
+        message("Fitting global propensity model using SuperLearner...")
       }
       suppress_output(propensity_scores <- generate_propensity_SL(exposure_data = data.frame(if(is.null(W_propensity)){E}else{cbind(E, W_propensity)}),
                                                                   obs.weights = obs.weights,

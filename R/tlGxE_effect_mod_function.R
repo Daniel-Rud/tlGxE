@@ -197,7 +197,7 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
                     MOR_additive_baseline_est = MOR_EM_mult_baseline_est,
                     MOR_additive_mult_est = MOR_EM_mult_est,
                     MOR_additive_Z_stat = MOR_EM_mult_Z_stat,
-                    MOR_additive_pvalue =MOR_EM_mult_pvalue)
+                    MOR_additive_pvalue = MOR_EM_mult_pvalue)
   }else
   {
     result_vector = c(ATE_G0 = tmle_E0$ATE %>% as.numeric,

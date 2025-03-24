@@ -30,7 +30,7 @@ plot.tlGxE = function(object, ...)
 
   sig_lvl = -1*log(alpha, base = 10)
 
-  result_frame = object
+  result_frame = object$tlGxE_scan_results
   G_names = colnames(result_frame)
 
   if(length(passed_args) == 1)

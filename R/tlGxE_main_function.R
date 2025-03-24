@@ -135,11 +135,31 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
                     progress = T,
                     verbose = T)
 {
+
+  # save for later
+  args_list = list(family = family,
+                    case_control_design = case_control_design,
+                    disease_prevalence = disease_prevalence,
+                    obs.weights = obs.weights,
+                    propensity_scores = propensity_scores,
+                    TMLE_args_list = TMLE_args_list,
+                    propensity_SL.library = propensity_SL.library,
+                    propensity_SL.cvControl = propensity_SL.cvControl,
+                    include_G_propensity = include_G_propensity,
+                    include_W_outcome = include_W_outcome,
+                    propensity_formula = propensity_formula,
+                    outcome_formula = outcome_formula,
+                    SNP_results = SNP_results,
+                    parallel = parallel,
+                    ncores = ncores,
+                    progress = progress,
+                    verbose = verbose
+  )
+
   ###########################################
   # Perform Arg Checks
   ###########################################
   Y = as.numeric(Y); E = as.numeric(E)
-
   set_list_args = set_arg_lists(TMLE_args_list, propensity_SL.cvControl, family, Y)
   TMLE_args_list = set_list_args[[1]]; propensity_SL.cvControl = set_list_args[[2]]
 
@@ -254,7 +274,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
   #########################################################################
   # Perform TMLE EM analysis for each SNP as an effect modifier ###########
   #########################################################################
-  tmle_results = NULL
+  tlGxE_results = NULL
 
   if(verbose == T)
   {
@@ -263,7 +283,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
 
   if(progress == T)
   {
-    progressr::with_progress(tmle_results <- tmle_EM_iterator(Y = Y,
+    progressr::with_progress(tlGxE_results <- tlGxE_EM_iterator(Y = Y,
                                                    E = E,
                                                    G = G,
                                                    W = W,
@@ -281,7 +301,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
                                                    ncores = ncores))
   }else
   {
-    tmle_results <- tmle_EM_iterator(Y = Y,
+    tlGxE_results <- tlGxE_EM_iterator(Y = Y,
                                      E = E,
                                      G = G,
                                      W = W,
@@ -300,7 +320,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
   }
 
 
-  result_frame = do.call(cbind, tmle_results)
+  result_frame = do.call(cbind, tlGxE_results)
   if(!is.null(result_frame))
   {
     if(is.null(colnames(G)))
@@ -312,15 +332,21 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
     }
   }
 
-  if(!is.null(result_frame))
+  result_list = list(
+    tlGxE_scan_results = result_frame,
+    global_propensity_scores = propensity_scores,
+    passed_arguments = args_list
+  )
+
+  if(!is.null(result_list))
   {
-    class(result_frame) = "tlGxE"
+    class(result_list) = "tlGxE"
   }
 
-  return(result_frame)
+  return(result_list)
 }
 
-tmle_EM_iterator = function(Y, E, G, W = NULL,propensity_scores = NULL, family = "binomial",
+tlGxE_EM_iterator = function(Y, E, G, W = NULL,propensity_scores = NULL, family = "binomial",
                             case_control_design = F, disease_prevalence = NULL,
                             obs.weights = NULL,
                             include_W_outcome = T,

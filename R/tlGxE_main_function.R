@@ -13,7 +13,7 @@ suppress_output <- function(expr) {
 # refer to the outcome with Y and the exposure with A
 
 #'
-#'Performs tlGxE scan to estimate causal effect modification over a set of candidate SNPs.
+#' Robust estimation of gene-environment interactions.
 #'
 #' @param Y Outcome vector, should be numeric. Either \eqn{\{0,1\}} vector for \code{family = "binomial"} or a numeric vector for
 #' continuous outcome for \code{family = "gaussian"}

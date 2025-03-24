@@ -32,8 +32,18 @@ You can install the development version of `tlGxE` from
 #install.packages("devtools")
 devtools::install_github("Daniel-Rud/tlGxE")
 #> Using github PAT from envvar GITHUB_PAT. Use `gitcreds::gitcreds_set()` and unset GITHUB_PAT in .Renviron (or elsewhere) if you want to use the more secure git credential store instead.
-#> Skipping install of 'tlGxE' from a github remote, the SHA1 (fa896ec3) has not changed since last install.
-#>   Use `force = TRUE` to force installation
+#> Downloading GitHub repo Daniel-Rud/tlGxE@HEAD
+#> 
+#> ── R CMD build ─────────────────────────────────────────────────────────────────
+#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpULqeke/remotesf7652b73c7d8/Daniel-Rud-tlGxE-54a1c63/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpULqeke/remotesf7652b73c7d8/Daniel-Rud-tlGxE-54a1c63/DESCRIPTION’
+#>   ─  preparing ‘tlGxE’:
+#>    checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
+#>   ─  checking for LF line-endings in source and make files and shell scripts
+#>   ─  checking for empty or unneeded directories
+#>    Omitted ‘LazyData’ from DESCRIPTION
+#>   ─  building ‘tlGxE_0.1.0.tar.gz’
+#>      
+#> 
 ```
 
 # Example
@@ -203,7 +213,10 @@ variable `E`, and the SNP matrix (or dataframe) `G`. In addition, we can
 supply a data frame or matrix of confounders `W` that are in a numeric
 coding. We will first demonstrate running `tlGxE` without SuperLearning
 in the outcome model and will use a `glmnet` outcome model. `tlGxE` uses
-SuperLearning in the global propensity model, by default.
+SuperLearning in the global propensity model, by default. However, we
+can supply any learners to be included in the SuperLearner. For
+simplicity of this first analysis, we will only include `glm` in the
+propensity SuperLearner.
 
 Notice that, because our cohort variable is a factor variable, we will
 need to use the `model.matrix` function to create a confounder matrix
@@ -229,11 +242,10 @@ tlGxE_1 = tlGxE(Y = outcome_data$Y, E = outcome_data$E, G = outcome_data[,3:12],
                                       nfolds_cv_Q_init = 10,
                                       nfolds_cv_glmnet_outcome = 5, 
                                       alpha_outcome = 0.5), 
-                propensity_SL.library = c("SL.glmnet", "SL.rpart", "SL.bartMachine"),
+                propensity_SL.library = c("SL.glm"),
                 propensity_SL.cvControl = list(V = 10)
 )
 #> Fitting global propensity model using SuperLearner...
-#> Loading required namespace: glmnet
 #> Iterating tlGxE over SNPs in G...
 ```
 
@@ -269,37 +281,47 @@ A few notes on the parameters included:
 - `propensity_SL.cvControl`: Options to control the cross validation for
   the propensity model (see `tlGxE` documentation).
 
-Lets look at the first column of the matrix returned from the `tlGxE`
-call.
+The output of the `tlGxE` call has three components:
+
+- `tlGxE_scan_results`: Matrix of results from the `tlGxE`.
+- `global_propensity_scores`: Vector of global propensity scores
+  computed for each observation from SuperLearner (or passed propensity
+  scores if supplied).
+- `passed_arguments`: Arguments passed in the `tlGxE` call.
+
+Lets look at the first column of the `tlGxE_scan_results` matrix
+returned from the `tlGxE` call.
 
 ``` r
-tlGxE_1[,1,drop = F] %>% round(8)
+tlGxE_1$tlGxE_scan_results[,1,drop = F] %>% round(8)
 #>                                     S1
-#> ATE_G0                      0.08331081
-#> ATE_G1                      0.17502792
-#> ATE_G2                      0.39625313
-#> var_ATE_G0                  0.00068584
-#> var_ATE_G1                  0.00094028
-#> var_ATE_G2                  0.00394965
-#> MOR_G0                      1.54260039
-#> MOR_G1                      2.16831767
-#> MOR_G2                      5.42146732
-#> var_MOR_G0                  0.04510598
-#> var_MOR_G1                  0.09088540
-#> var_MOR_G2                  2.62543702
-#> ATE_codominant_F_statistic 11.22493120
-#> ATE_codominant_pvalue       0.00001701
-#> MOR_codominant_F_statistic  3.97123304
-#> MOR_codominant_pvalue       0.01953605
-#> ATE_additive_baseline_est   0.07273244
-#> ATE_additive_lin_est        0.13130094
-#> ATE_additive_pvalue         0.00000602
-#> MOR_additive_baseline_est   1.45448331
-#> MOR_additive_mult_est       1.68079926
-#> MOR_additive_pvalue         0.00027731
+#> ATE_G0                      0.08259123
+#> ATE_G1                      0.17436145
+#> ATE_G2                      0.39722400
+#> var_ATE_G0                  0.00069035
+#> var_ATE_G1                  0.00094846
+#> var_ATE_G2                  0.00400065
+#> MOR_G0                      1.53663905
+#> MOR_G1                      2.16186452
+#> MOR_G2                      5.44191080
+#> var_MOR_G0                  0.04500680
+#> var_MOR_G1                  0.09103350
+#> var_MOR_G2                  2.67892853
+#> ATE_codominant_F_statistic 11.20903042
+#> ATE_codominant_pvalue       0.00001727
+#> MOR_codominant_F_statistic  3.95525126
+#> MOR_codominant_pvalue       0.01984547
+#> ATE_additive_baseline_est   0.07192523
+#> ATE_additive_lin_est        0.13174401
+#> ATE_additive_pvalue         0.00000621
+#> MOR_additive_baseline_est   1.44836361
+#> MOR_additive_mult_est       1.68447657
+#> MOR_additive_pvalue         0.00027812
 ```
 
-The model output contains (in the rows):
+### Output
+
+The `tlGxE_scan_results` output contains (in the rows):
 
 - {`ATE_G0`, `ATE_G1`, `ATE_G2`}: The estimated ATEs within subgroups of
   individuals who have 0, 1, or 2 of the minor allele for the analyzed
@@ -350,14 +372,60 @@ estimated on the large dataset.
 
 ``` r
 cbind(true_ATEs = true_ACEs[,1], 
-      tlGxE_ATEs = tlGxE_1[1:3,1], 
+      tlGxE_ATEs = tlGxE_1$tlGxE_scan_results[1:3,1], 
       true_MORs = true_ACEs[,2], 
-      tlGxE_MORs = tlGxE_1[7:9,1])
+      tlGxE_MORs = tlGxE_1$tlGxE_scan_results[7:9,1])
 #>      true_ATEs tlGxE_ATEs true_MORs tlGxE_MORs
-#> S1_0 0.0822009 0.08331081  1.518121   1.542600
-#> S1_1 0.2058036 0.17502792  2.453725   2.168318
-#> S1_2 0.3311761 0.39625313  3.975090   5.421467
+#> S1_0 0.0822009 0.08259123  1.518121   1.536639
+#> S1_1 0.2058036 0.17436145  2.453725   2.161865
+#> S1_2 0.3311761 0.39722400  3.975090   5.441911
 ```
+
+### Evaluating global propensity scores
+
+An important component of any causal inference analysis is careful
+consideration of causal assumptions implicated by the model. As the only
+readily verifiable assumption, we can examine the distribution of the
+global propensity scores to discern whether there are any apparent
+positivity issues present in our data that can affect both the
+identifiability and reliability of estimation.
+
+We can plot the `global_propensity_scores` as follows:
+
+``` r
+ hist(tlGxE_1$global_propensity_scores)
+```
+
+<img src="man/figures/README-unnamed-chunk-10-1.png" width="100%" />
+
+Generally, a global propensity score distribution that is uni-modal and
+without heavy tails at the extremes (\< 0.1 and \> 0.9) indicate
+adherence to the positivity assumption. Internally, `tlGxE` screens for
+positivity violators (observations with global propensity scores at the
+extreme of the distribution) and can get by when few near positivity
+violators are present (say, less than 5-10% of the data). There are two
+ways by which positivity violators can be dealt with that can be found
+in the `near_positivity_method` within the `TMLE_args_list` parameter:
+
+- `trim`: (Default) Excludes observations from analysis that have global
+  propensity score less than `npv_thresh` or greater than ‘1 -
+  npv_thresh’ (`npv_thresh` also found in `TMLE_args_list`).
+- ``` rebound``: Set global propensity scores of observations that have global propensity score less than ```npv_thresh`or greater than '1 - npv_thresh' to the bounds`npv_thresh\`
+  or ‘1 - npv_thresh’, respectively.
+
+In simulation, we found `trim` to better preserve type 1 error and
+estimate causal effects in situations with near-positivity violations,
+and hence is set as the default near positivity violator method.
+
+If severe positivity violation is noticed, it is important to understand
+why certain substrata imposed by the confounder distribution do not have
+sufficient contrast in exposure. Simply removing a group of individuals
+may implicate bias in estimation, and (if done) should be done with
+caution. In addition, we have noticed that in cases where the global
+propensity distribution is bimodal, there usually is a very strong
+predictor of the exposure among the confounders. A simple analysis using
+a `glm` or `glmnet` model can be performed to screen for very strong
+predictors of exposure.
 
 ## A more involved tlGxE model – Custom SuperLearning
 
@@ -438,13 +506,14 @@ tlGxE_2 = tlGxE(Y = outcome_data$Y, E = outcome_data$E, G = outcome_data[,3:12],
                 include_W_outcome = T, 
                 SNP_results = 1:3)
 #> Fitting global propensity model using SuperLearner...
+#> Loading required namespace: glmnet
 #> Iterating tlGxE over SNPs in G...
 
 alpha = 0.05/10
 plot(tlGxE_2, alpha = alpha)
 ```
 
-<img src="man/figures/README-unnamed-chunk-11-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-12-1.png" width="100%" />
 
 ## Using Custom Formulas for Global Propensity and Outcome Models
 
@@ -502,7 +571,7 @@ alpha = 0.05/10
 plot(tlGxE_3, alpha = alpha)
 ```
 
-<img src="man/figures/README-unnamed-chunk-12-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-13-1.png" width="100%" />
 
 There are many tuning parameters in `tlGxE`. Please refer to the
 documentation of `tlGxE` to see all the functionalities of the method.
@@ -525,10 +594,10 @@ single SNP (we do for S1):
   original scale, we can compute
 
 ``` r
-ATEs_under_additivity = c(ATE_0 = tlGxE_1["ATE_additive_baseline_est","S1"], ATE_1 = tlGxE_1["ATE_additive_baseline_est","S1"] + tlGxE_1["ATE_additive_lin_est","S1"], ATE_2 = tlGxE_1["ATE_additive_baseline_est","S1"] + 2*tlGxE_1["ATE_additive_lin_est","S1"])
+ATEs_under_additivity = c(ATE_0 = tlGxE_1$tlGxE_scan_results["ATE_additive_baseline_est","S1"], ATE_1 = tlGxE_1$tlGxE_scan_results["ATE_additive_baseline_est","S1"] + tlGxE_1$tlGxE_scan_results["ATE_additive_lin_est","S1"], ATE_2 = tlGxE_1$tlGxE_scan_results["ATE_additive_baseline_est","S1"] + 2*tlGxE_1$tlGxE_scan_results["ATE_additive_lin_est","S1"])
 ATEs_under_additivity %>% round(3)
 #> ATE_0 ATE_1 ATE_2 
-#> 0.073 0.204 0.335
+#> 0.072 0.204 0.335
 ```
 
 - **MOR**: Because we assume additivity of effect modification in the
@@ -536,10 +605,10 @@ ATEs_under_additivity %>% round(3)
   estimated effect modification multiplicative factor as shown:
 
 ``` r
-MORs_under_additivity = c(MOR_0 = tlGxE_1["MOR_additive_baseline_est","S1"], MOR_1 = tlGxE_1["MOR_additive_baseline_est","S1"] * tlGxE_1["MOR_additive_mult_est","S1"], MOR_2 = tlGxE_1["MOR_additive_baseline_est","S1"]*tlGxE_1["MOR_additive_mult_est","S1"]^2)
+MORs_under_additivity = c(MOR_0 = tlGxE_1$tlGxE_scan_results["MOR_additive_baseline_est","S1"], MOR_1 = tlGxE_1$tlGxE_scan_results["MOR_additive_baseline_est","S1"] * tlGxE_1$tlGxE_scan_results["MOR_additive_mult_est","S1"], MOR_2 = tlGxE_1$tlGxE_scan_results["MOR_additive_baseline_est","S1"]*tlGxE_1$tlGxE_scan_results["MOR_additive_mult_est","S1"]^2)
 MORs_under_additivity %>% round(3)
 #> MOR_0 MOR_1 MOR_2 
-#> 1.454 2.445 4.109
+#> 1.448 2.440 4.110
 ```
 
 # Conclusion / Bug Reporting

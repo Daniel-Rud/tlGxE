@@ -102,7 +102,7 @@ the SNPs in \code{G} (as determined by the \code{SNP_results} argument).  Defaul
 \description{
 Performs \emph{tlGxE} scan over a set of SNPs.  \emph{tlGxE} estimates causal effect modification of the average treatment effect (ATE) and marginal odds ratio (MOR) of
 exposure using targeted learning across disjoint subgroups of observations that have 0, 1, or 2 of a minor allele for a particular SNP. \emph{tlGxE} iterates over
-a set of candidate SNPs that are included in the input \code{G}, where the argument \code{SNP_results} can be used to confine the analysis to only on a subset of
+a set of candidate SNPs that are included in the input \code{G}, where the argument \code{SNP_results} can be used to confine the analysis to a subset of
 \code{G} (while adjusting for confounding by all SNPs in G).
 }
 \details{

@@ -111,9 +111,13 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
   n1 = length(E1_indices)
   n2 = length(E2_indices)
 
-  ATE_welch_aov = welch_anova(means = c(tmle_E0$ATE, tmle_E1$ATE, tmle_E2$ATE),
-                              var_means = c(tmle_E0$ATE_var, tmle_E1$ATE_var, tmle_E2$ATE_var),
-                              sample_sizes = c(n0, n1, n2))
+  # ATE_welch_aov = welch_anova(means = c(tmle_E0$ATE, tmle_E1$ATE, tmle_E2$ATE),
+  #                             var_means = c(tmle_E0$ATE_var, tmle_E1$ATE_var, tmle_E2$ATE_var),
+  #                             sample_sizes = c(n0, n1, n2))
+
+  ATE_welch_aov = codominant_LRT(means = c(tmle_E0$ATE, tmle_E1$ATE, tmle_E2$ATE),
+                              var_means = c(tmle_E0$ATE_var, tmle_E1$ATE_var, tmle_E2$ATE_var))
+
 
   ATE_EM_F_statistic = ATE_welch_aov$F_statistic
 
@@ -142,9 +146,13 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
 
     # Perform anova for MOR results
 
-    MOR_welch_aov = welch_anova(means = c(tmle_E0$MOR, tmle_E1$MOR, tmle_E2$MOR),
-                                var_means = c(tmle_E0$MOR_var, tmle_E1$MOR_var, tmle_E2$MOR_var),
-                                sample_sizes = c(n0, n1, n2))
+    # MOR_welch_aov = welch_anova(means = c(tmle_E0$MOR, tmle_E1$MOR, tmle_E2$MOR),
+    #                             var_means = c(tmle_E0$MOR_var, tmle_E1$MOR_var, tmle_E2$MOR_var),
+    #                             sample_sizes = c(n0, n1, n2))
+
+    # trying LRT instead
+    MOR_welch_aov = codominant_LRT(means = c(tmle_E0$MOR, tmle_E1$MOR, tmle_E2$MOR),
+                                var_means = c(tmle_E0$MOR_var, tmle_E1$MOR_var, tmle_E2$MOR_var))
 
     MOR_EM_F_statistic = MOR_welch_aov$F_statistic
 
@@ -297,6 +305,40 @@ welch_anova = function(means, var_means, sample_sizes)
   # Return results
   return(list(F_statistic = F_stat, p_value = p_value, df1 = df1, df2 = df2))
 }
+
+
+codominant_LRT = function(means, var_means)
+{
+  mu0 = means[1]; mu1 = means[2]; mu2 = means[3]
+  sigma0 = sqrt(var_means[1]); sigma1 = sqrt(var_means[2]); sigma2 = sqrt(var_means[3])
+
+  # Log-likelihood under the alternative hypothesis
+  # I write the value as 0 and the mean as 0 because under H1, we will have dnorm(m_i, m_i, sigma_0)
+  logL_alt = dnorm(0, 0, sigma0, log = TRUE) +
+    dnorm(0, 0, sigma1, log = TRUE) +
+    dnorm(0, 0, sigma2, log = TRUE)
+
+  # MLEs under the null hypothesis (common mean)
+  sigma_vec = c(sigma1^2 *sigma2^2,sigma0^2 *sigma2^2, sigma0^2 *sigma1^2)
+  mu_null = (sigma_vec %*% c(mu0, mu1, mu2)) / sum(sigma_vec)
+
+  # Log-likelihood under the null hypothesis
+  logL_null = dnorm(mu0, mu_null, sigma0, log = TRUE) +
+    dnorm(mu1, mu_null, sigma1, log = TRUE) +
+    dnorm(mu2, mu_null, sigma2, log = TRUE)
+
+  # Likelihood ratio statistic
+  LRT_stat = -2 * (logL_null - logL_alt)
+
+  # Compare with chi-square distribution with 2 degrees of freedom
+  p_value = pchisq(LRT_stat, df = 2, lower.tail = FALSE)
+
+  # Return results
+  return(list(F_statistic = LRT_stat, p_value = p_value))
+}
+
+
+
 
 
 

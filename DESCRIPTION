@@ -4,8 +4,7 @@ Title: Targeted Learning for Gene Environment Interactions
 Version: 0.1.0
 Author: Daniel Rud <rud@usc.edu>
 Maintainer: Daniel Rud <rud@usc.edu>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: Targeted learning framework for robust gene-environment interaction analysis
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true

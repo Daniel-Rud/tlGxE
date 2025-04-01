@@ -2,7 +2,7 @@
 % Please edit documentation in R/tlGxE_main_function.R
 \name{tlGxE}
 \alias{tlGxE}
-\title{Performs tlGxE scan to estimate causal effect modification over a set of candidate SNPs.}
+\title{Robust estimation of gene-environment interactions.}
 \usage{
 tlGxE(
   Y,

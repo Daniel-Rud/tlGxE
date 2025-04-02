@@ -111,12 +111,12 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
   n1 = length(E1_indices)
   n2 = length(E2_indices)
 
-  # ATE_welch_aov = welch_anova(means = c(tmle_E0$ATE, tmle_E1$ATE, tmle_E2$ATE),
-  #                             var_means = c(tmle_E0$ATE_var, tmle_E1$ATE_var, tmle_E2$ATE_var),
-  #                             sample_sizes = c(n0, n1, n2))
+  ATE_welch_aov = welch_anova(means = c(tmle_E0$ATE, tmle_E1$ATE, tmle_E2$ATE),
+                              var_means = c(tmle_E0$ATE_var, tmle_E1$ATE_var, tmle_E2$ATE_var),
+                              sample_sizes = c(n0, n1, n2))
 
-  ATE_welch_aov = codominant_LRT(means = c(tmle_E0$ATE, tmle_E1$ATE, tmle_E2$ATE),
-                              var_means = c(tmle_E0$ATE_var, tmle_E1$ATE_var, tmle_E2$ATE_var))
+  # ATE_welch_aov = codominant_LRT(means = c(tmle_E0$ATE, tmle_E1$ATE, tmle_E2$ATE),
+  #                             var_means = c(tmle_E0$ATE_var, tmle_E1$ATE_var, tmle_E2$ATE_var))
 
 
   ATE_EM_F_statistic = ATE_welch_aov$F_statistic
@@ -146,13 +146,13 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
 
     # Perform anova for MOR results
 
-    # MOR_welch_aov = welch_anova(means = c(tmle_E0$MOR, tmle_E1$MOR, tmle_E2$MOR),
-    #                             var_means = c(tmle_E0$MOR_var, tmle_E1$MOR_var, tmle_E2$MOR_var),
-    #                             sample_sizes = c(n0, n1, n2))
+    MOR_welch_aov = welch_anova(means = c(tmle_E0$MOR, tmle_E1$MOR, tmle_E2$MOR),
+                                var_means = c(tmle_E0$MOR_var, tmle_E1$MOR_var, tmle_E2$MOR_var),
+                                sample_sizes = c(n0, n1, n2))
 
-    # trying LRT instead
-    MOR_welch_aov = codominant_LRT(means = c(tmle_E0$MOR, tmle_E1$MOR, tmle_E2$MOR),
-                                var_means = c(tmle_E0$MOR_var, tmle_E1$MOR_var, tmle_E2$MOR_var))
+    # # trying LRT instead
+    # MOR_welch_aov = codominant_LRT(means = c(tmle_E0$MOR, tmle_E1$MOR, tmle_E2$MOR),
+    #                             var_means = c(tmle_E0$MOR_var, tmle_E1$MOR_var, tmle_E2$MOR_var))
 
     MOR_EM_F_statistic = MOR_welch_aov$F_statistic
 
@@ -306,7 +306,7 @@ welch_anova = function(means, var_means, sample_sizes)
   return(list(F_statistic = F_stat, p_value = p_value, df1 = df1, df2 = df2))
 }
 
-
+# LRT based codominant effect modification test
 codominant_LRT = function(means, var_means)
 {
   mu0 = means[1]; mu1 = means[2]; mu2 = means[3]

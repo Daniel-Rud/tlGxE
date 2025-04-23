@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# tlGxE: Targeted Learning for Gene Environment Interaction Studies
+# tlGxE: Targeted Learning for Gene Environment Interaction Studies <img src="man/figures/tlGxE_hex.png" width="100" align="right" />
 
 <!-- badges: start -->
 <!-- badges: end -->

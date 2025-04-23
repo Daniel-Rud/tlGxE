@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# tlGxE: Targeted Learning for Gene Environment Interaction Studies
+# tlGxE: Targeted Learning for Gene Environment Interaction Studies <img src="man/figures/tlGxE_hex.png" width="100" align="right" />
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -35,12 +35,12 @@ devtools::install_github("Daniel-Rud/tlGxE")
 #> Downloading GitHub repo Daniel-Rud/tlGxE@HEAD
 #> 
 #> ── R CMD build ─────────────────────────────────────────────────────────────────
-#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpyvkXND/remotes1379b197f8c1e/Daniel-Rud-tlGxE-5175bd5/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpyvkXND/remotes1379b197f8c1e/Daniel-Rud-tlGxE-5175bd5/DESCRIPTION’
+#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpTHtoCy/remotes146311e3c1d49/Daniel-Rud-tlGxE-f2c12cb/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpTHtoCy/remotes146311e3c1d49/Daniel-Rud-tlGxE-f2c12cb/DESCRIPTION’
 #>   ─  preparing ‘tlGxE’:
 #>      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
 #>   ─  checking for LF line-endings in source and make files and shell scripts
 #>   ─  checking for empty or unneeded directories
-#>    Omitted ‘LazyData’ from DESCRIPTION
+#>      Omitted ‘LazyData’ from DESCRIPTION
 #>   ─  building ‘tlGxE_0.1.0.tar.gz’
 #>      
 #> 

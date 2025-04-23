@@ -24,6 +24,7 @@ tlGxE(
   propensity_SL.cvControl = list(V = 10L, stratifyCV = T, shuffle = TRUE, validRows =
     NULL),
   include_G_propensity = F,
+  include_G_outcome = T,
   include_W_outcome = T,
   propensity_formula = NULL,
   outcome_formula = NULL,
@@ -77,14 +78,17 @@ List of available learners can be viewed using \code{SuperLearner::listWrappers(
 \item{include_G_propensity}{Option to include all SNPs in \code{G} in the propensity model.  Default is \code{FALSE}.  If set to \code{TRUE}, one should use
 learners in the SuperLearner that can accommodate the dimension of the data.}
 
+\item{include_G_outcome}{Option to include all SNPs in \code{G} in the iterated outcome models \emph{except} the current iterated SNP.  Default is \code{TRUE}.  If set to \code{TRUE} and \code{outcome_method = 'SL'}, one should use
+learners in the SuperLearner that can accommodate the dimension of the data.}
+
 \item{include_W_outcome}{Option to include all confounders/adjusting variables defined in \code{W} in the outcome model.  Default is \code{TRUE}.}
 
 \item{propensity_formula}{Option to include a formula for the propensity model to fit a generalized linear model.  \strong{NOTE:} when creating a
-formula, refer to the exposure variable as \code{A} irregardless of its true name.  Confounders can be references through their columnnames
+formula, refer to the exposure variable as \code{E} irregardless of its true name.  Confounders can be references through their columnnames
 in the \code{W} dataframe, and elements from \code{G} can be included similarly if \code{include_G_propensity = TRUE}.}
 
 \item{outcome_formula}{Option to include a formula for the outcome model to fit a generalized linear model.  \strong{NOTE:} when creating a
-formula, refer to the outcome variable as \code{Y} and the exposure variable as \code{A} irregardless of their true names.  Confounders can be references through their columnnames
+formula, refer to the outcome variable as \code{Y} and the exposure variable as \code{E} irregardless of their true names.  Confounders can be references through their columnnames
 in the \code{G} dataframe, and elements from \code{W} can be included similarly if \code{include_W_propensity = TRUE}.}
 
 \item{SNP_results}{Option to specify a subset of SNPs to iterate over.  If desired, a vector of column indices corresponding to the SNPs of interest

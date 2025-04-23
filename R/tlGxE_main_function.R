@@ -44,12 +44,14 @@ suppress_output <- function(expr) {
 #' \code{shuffle} (should the data be shuffled?  default is \code{TRUE}), and \code{validRows} (do we want to supply validation data observations?).
 #' @param include_G_propensity Option to include all SNPs in \code{G} in the propensity model.  Default is \code{FALSE}.  If set to \code{TRUE}, one should use
 #' learners in the SuperLearner that can accommodate the dimension of the data.
+#' @param include_G_outcome Option to include all SNPs in \code{G} in the iterated outcome models \emph{except} the current iterated SNP.  Default is \code{TRUE}.  If set to \code{TRUE} and \code{outcome_method = 'SL'}, one should use
+#' learners in the SuperLearner that can accommodate the dimension of the data.
 #' @param include_W_outcome Option to include all confounders/adjusting variables defined in \code{W} in the outcome model.  Default is \code{TRUE}.
 #' @param propensity_formula Option to include a formula for the propensity model to fit a generalized linear model.  \strong{NOTE:} when creating a
-#' formula, refer to the exposure variable as \code{A} irregardless of its true name.  Confounders can be references through their columnnames
+#' formula, refer to the exposure variable as \code{E} irregardless of its true name.  Confounders can be references through their columnnames
 #' in the \code{W} dataframe, and elements from \code{G} can be included similarly if \code{include_G_propensity = TRUE}.
 #' @param outcome_formula Option to include a formula for the outcome model to fit a generalized linear model.  \strong{NOTE:} when creating a
-#' formula, refer to the outcome variable as \code{Y} and the exposure variable as \code{A} irregardless of their true names.  Confounders can be references through their columnnames
+#' formula, refer to the outcome variable as \code{Y} and the exposure variable as \code{E} irregardless of their true names.  Confounders can be references through their columnnames
 #' in the \code{G} dataframe, and elements from \code{W} can be included similarly if \code{include_W_propensity = TRUE}.
 #' @param SNP_results Option to specify a subset of SNPs to iterate over.  If desired, a vector of column indices corresponding to the SNPs of interest
 #' should be provided.  Default is to iterate over all SNPs in \code{G}
@@ -100,60 +102,62 @@ suppress_output <- function(expr) {
 #' }
 #' @export
 tlGxE = function(Y, E, G, W = NULL, family = "binomial",
-                    case_control_design = F, disease_prevalence = NULL,
-                    obs.weights = NULL,
-                    propensity_scores = NULL,
-                    TMLE_args_list = list(
-                      outcome_method = c("glmnet", "glmnet_int", "gesso", "SL"),
-                      npv_thresh = (5/sqrt(length(Y)))/log(length(Y)),
-                      near_positivity_method = c("trim", "rebound"),
-                      nfolds_cv_Q_init = 10,
-                      nfolds_cv_glmnet_outcome = 5,
-                      alpha_outcome = .5,
-                      clever_cov_propensity_wt = T,
-                      outcome_SL.library = c("SL.glmnet",
-                                             "SL.rpart",
-                                             "SL.bartMachine"),
-                      outcome_SL.cvControl = list(V = 10L,
-                                                  stratifyCV = ifelse(family == "gaussian", F, T),
-                                                  shuffle = TRUE,
-                                                  validRows = NULL)),
-                    propensity_SL.library = c("SL.glmnet",
-                                              "SL.rpart",
-                                              "SL.bartMachine"),
-                    propensity_SL.cvControl = list(V = 10L,
-                                                   stratifyCV = T,
-                                                   shuffle = TRUE,
-                                                   validRows = NULL),
-                    include_G_propensity = F,
-                    include_W_outcome = T,
-                    propensity_formula = NULL,
-                    outcome_formula = NULL,
-                    SNP_results = 1:(ifelse(is.null(ncol(G)), 1, ncol(G))),
-                    parallel = T,
-                    ncores = ifelse(parallel, future::availableCores(), 1),
-                    progress = T,
-                    verbose = T)
+                 case_control_design = F, disease_prevalence = NULL,
+                 obs.weights = NULL,
+                 propensity_scores = NULL,
+                 TMLE_args_list = list(
+                   outcome_method = c("glmnet", "glmnet_int", "gesso", "SL"),
+                   npv_thresh = (5/sqrt(length(Y)))/log(length(Y)),
+                   near_positivity_method = c("trim", "rebound"),
+                   nfolds_cv_Q_init = 10,
+                   nfolds_cv_glmnet_outcome = 5,
+                   alpha_outcome = .5,
+                   clever_cov_propensity_wt = T,
+                   outcome_SL.library = c("SL.glmnet",
+                                          "SL.rpart",
+                                          "SL.bartMachine"),
+                   outcome_SL.cvControl = list(V = 10L,
+                                               stratifyCV = ifelse(family == "gaussian", F, T),
+                                               shuffle = TRUE,
+                                               validRows = NULL)),
+                 propensity_SL.library = c("SL.glmnet",
+                                           "SL.rpart",
+                                           "SL.bartMachine"),
+                 propensity_SL.cvControl = list(V = 10L,
+                                                stratifyCV = T,
+                                                shuffle = TRUE,
+                                                validRows = NULL),
+                 include_G_propensity = F,
+                 include_G_outcome = T,
+                 include_W_outcome = T,
+                 propensity_formula = NULL,
+                 outcome_formula = NULL,
+                 SNP_results = 1:(ifelse(is.null(ncol(G)), 1, ncol(G))),
+                 parallel = T,
+                 ncores = ifelse(parallel, future::availableCores(), 1),
+                 progress = T,
+                 verbose = T)
 {
 
   # save for later
   args_list = list(family = family,
-                    case_control_design = case_control_design,
-                    disease_prevalence = disease_prevalence,
-                    obs.weights = obs.weights,
-                    propensity_scores = propensity_scores,
-                    TMLE_args_list = TMLE_args_list,
-                    propensity_SL.library = propensity_SL.library,
-                    propensity_SL.cvControl = propensity_SL.cvControl,
-                    include_G_propensity = include_G_propensity,
-                    include_W_outcome = include_W_outcome,
-                    propensity_formula = propensity_formula,
-                    outcome_formula = outcome_formula,
-                    SNP_results = SNP_results,
-                    parallel = parallel,
-                    ncores = ncores,
-                    progress = progress,
-                    verbose = verbose
+                   case_control_design = case_control_design,
+                   disease_prevalence = disease_prevalence,
+                   obs.weights = obs.weights,
+                   propensity_scores = propensity_scores,
+                   TMLE_args_list = TMLE_args_list,
+                   propensity_SL.library = propensity_SL.library,
+                   propensity_SL.cvControl = propensity_SL.cvControl,
+                   include_G_propensity = include_G_propensity,
+                   include_G_outcome = include_G_outcome,
+                   include_W_outcome = include_W_outcome,
+                   propensity_formula = propensity_formula,
+                   outcome_formula = outcome_formula,
+                   SNP_results = SNP_results,
+                   parallel = parallel,
+                   ncores = ncores,
+                   progress = progress,
+                   verbose = verbose
   )
 
   ###########################################
@@ -176,6 +180,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
                      propensity_SL.library = propensity_SL.library,
                      propensity_SL.cvControl = propensity_SL.cvControl,
                      include_G_propensity = include_G_propensity,
+                     include_G_outcome = include_G_outcome,
                      include_W_outcome = include_W_outcome,
                      propensity_formula = propensity_formula,
                      outcome_formula = outcome_formula,
@@ -271,6 +276,14 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
     }
   }
 
+  # Warning if no confounders included in outcome model
+  if(!include_G_outcome && !include_W_outcome)
+  {
+    warning("  No confounder adjustments specified for outcome model.  Reverting to estimating
+    iterated outcome models using weighted mean outcome levels of exposed/unexposed.  If
+    confounder adjustments are desired, modify `include_W_outcome` and `include_G_outcome` arguments.")
+  }
+
   #########################################################################
   # Perform TMLE EM analysis for each SNP as an effect modifier ###########
   #########################################################################
@@ -292,6 +305,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
                                                    case_control_design = case_control_design,
                                                    disease_prevalence = disease_prevalence,
                                                    obs.weights = obs.weights,
+                                                   include_G_outcome = include_G_outcome,
                                                    include_W_outcome = include_W_outcome,
                                                    outcome_formula = outcome_formula,
                                                    TMLE_args_list = TMLE_args_list,
@@ -310,6 +324,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
                                      case_control_design = case_control_design,
                                      disease_prevalence = disease_prevalence,
                                      obs.weights = obs.weights,
+                                     include_G_outcome = include_G_outcome,
                                      include_W_outcome = include_W_outcome,
                                      outcome_formula = outcome_formula,
                                      TMLE_args_list = TMLE_args_list,
@@ -349,6 +364,7 @@ tlGxE = function(Y, E, G, W = NULL, family = "binomial",
 tlGxE_EM_iterator = function(Y, E, G, W = NULL,propensity_scores = NULL, family = "binomial",
                             case_control_design = F, disease_prevalence = NULL,
                             obs.weights = NULL,
+                            include_G_outcome = T,
                             include_W_outcome = T,
                             outcome_formula = NULL,
                             TMLE_args_list = list(
@@ -397,25 +413,30 @@ tlGxE_EM_iterator = function(Y, E, G, W = NULL,propensity_scores = NULL, family 
       # We pass the propensities to TMLE
       W_exposure_curr = NULL
 
-      if(include_W_outcome && !is.null(W))
+      # denote which variables to include as confounder adjustments in TMLE iterations
+
+      if (!is.null(ncol(G)) && include_G_outcome)
       {
-        if(!is.null(ncol(G)))
+        G_part = G[, -i]
+      }else
+      {
+        G_part = NULL
+      }
+
+      if (!is.null(W) && include_W_outcome)
+      {
+        if (!is.null(G_part))
         {
-          W_outcome_curr = cbind(G[,-i], W)
-        }else
+          W_outcome_curr = cbind(G_part, W)
+        } else
         {
           W_outcome_curr = W
         }
-      }else
+      } else
       {
-        if(!is.null(ncol(G)))
-        {
-          W_outcome_curr = G[,-i]
-        }else
-        {
-          W_outcome_curr = NULL
-        }
+        W_outcome_curr = G_part
       }
+
 
       effect_modifier =  if(!is.null(ncol(G))){G[,i]}else{G}
 

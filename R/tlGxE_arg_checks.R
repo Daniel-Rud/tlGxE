@@ -1,7 +1,7 @@
 
 perform_arg_checks = function(Y, E, G, W, family, case_control_design,
                               disease_prevalence,  obs.weights,  propensity_scores,
-                              TMLE_args_list,  propensity_SL.library,  propensity_SL.cvControl, include_G_propensity,
+                              TMLE_args_list,  propensity_SL.library,  propensity_SL.cvControl, include_G_propensity, include_G_outcome,
                               include_W_outcome,  propensity_formula,  outcome_formula,  SNP_results,  parallel,  ncores,  progress,  verbose)
 {
   ####################################
@@ -161,6 +161,9 @@ perform_arg_checks = function(Y, E, G, W, family, case_control_design,
   # include_G_propensity, include_W_outcome
   if (!is.logical(include_G_propensity)) {
     stop("'include_G_propensity' must be logical.")
+  }
+  if (!is.logical(include_G_outcome)) {
+    stop("'include_G_outcome' must be logical.")
   }
   if (!is.logical(include_W_outcome)) {
     stop("'include_W_outcome' must be logical.")

@@ -46,6 +46,7 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
   E1_indices = which(effect_modifier == 1)
   E2_indices = which(effect_modifier == 2)
 
+  # TMLE for SNP = 0
   tmle_E0 = TMLE(Y = Y[E0_indices], A = E[E0_indices],
                  W_outcome = if(is.null(W_outcome)){NULL}else{data.frame(W_outcome)[E0_indices, ]},
                  W_exposure = if(is.null(W_exposure)){NULL}else{data.frame(W_exposure)[E0_indices, ]},
@@ -64,7 +65,7 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
                  clever_cov_propensity_wt = clever_cov_propensity_wt,
                  outcome_SL.library = outcome_SL.library,
                  outcome_SL.cvControl = outcome_SL.cvControl)
-
+  # TMLE for SNP = 1
   tmle_E1 = TMLE(Y = Y[E1_indices], A = E[E1_indices],
                  W_outcome = if(is.null(W_outcome)){NULL}else{data.frame(W_outcome)[E1_indices, ]},
                  W_exposure = if(is.null(W_exposure)){NULL}else{data.frame(W_exposure)[E1_indices, ]},
@@ -84,6 +85,7 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
                  outcome_SL.library = outcome_SL.library,
                  outcome_SL.cvControl = outcome_SL.cvControl)
 
+  # TMLE for SNP = 2
   tmle_E2 = TMLE(Y = Y[E2_indices], A = E[E2_indices],
                  W_outcome = if(is.null(W_outcome)){NULL}else{data.frame(W_outcome)[E2_indices, ]},
                  W_exposure = if(is.null(W_exposure)){NULL}else{data.frame(W_exposure)[E2_indices, ]},
@@ -182,30 +184,30 @@ TMLE_effect_mod = function(Y, E,effect_modifier, W_outcome = NULL, W_exposure = 
 
   if(family == "binomial")
   {
-  result_vector = c(ATE_G0 = tmle_E0$ATE %>% as.numeric,
-                    ATE_G1 = tmle_E1$ATE %>% as.numeric,
-                    ATE_G2 = tmle_E2$ATE %>% as.numeric,
-                    var_ATE_G0 = tmle_E0$ATE_var %>% as.numeric,
-                    var_ATE_G1 = tmle_E1$ATE_var %>% as.numeric,
-                    var_ATE_G2 = tmle_E2$ATE_var %>% as.numeric,
-                    MOR_G0 = tmle_E0$MOR %>% as.numeric,
-                    MOR_G1 = tmle_E1$MOR %>% as.numeric,
-                    MOR_G2 = tmle_E2$MOR %>% as.numeric,
-                    var_MOR_G0 = tmle_E0$MOR_var %>% as.numeric,
-                    var_MOR_G1 = tmle_E1$MOR_var %>% as.numeric,
-                    var_MOR_G2 = tmle_E2$MOR_var %>% as.numeric,
-                    ATE_codominant_F_statistic = ATE_EM_F_statistic,
-                    ATE_codominant_pvalue = ATE_EM_pvalue,
-                    MOR_codominant_F_statistic = MOR_EM_F_statistic,
-                    MOR_codominant_pvalue = MOR_EM_pvalue,
-                    ATE_additive_baseline_est = ATE_EM_lin_baseline_est,
-                    ATE_additive_lin_est = ATE_EM_lin_est,
-                    ATE_additive_Z_stat = ATE_EM_lin_Z_stat,
-                    ATE_additive_pvalue = ATE_EM_lin_pvalue,
-                    MOR_additive_baseline_est = MOR_EM_mult_baseline_est,
-                    MOR_additive_mult_est = MOR_EM_mult_est,
-                    MOR_additive_Z_stat = MOR_EM_mult_Z_stat,
-                    MOR_additive_pvalue = MOR_EM_mult_pvalue)
+    result_vector = c(ATE_G0 = tmle_E0$ATE %>% as.numeric,
+                      ATE_G1 = tmle_E1$ATE %>% as.numeric,
+                      ATE_G2 = tmle_E2$ATE %>% as.numeric,
+                      var_ATE_G0 = tmle_E0$ATE_var %>% as.numeric,
+                      var_ATE_G1 = tmle_E1$ATE_var %>% as.numeric,
+                      var_ATE_G2 = tmle_E2$ATE_var %>% as.numeric,
+                      MOR_G0 = tmle_E0$MOR %>% as.numeric,
+                      MOR_G1 = tmle_E1$MOR %>% as.numeric,
+                      MOR_G2 = tmle_E2$MOR %>% as.numeric,
+                      var_MOR_G0 = tmle_E0$MOR_var %>% as.numeric,
+                      var_MOR_G1 = tmle_E1$MOR_var %>% as.numeric,
+                      var_MOR_G2 = tmle_E2$MOR_var %>% as.numeric,
+                      ATE_codominant_F_statistic = ATE_EM_F_statistic,
+                      ATE_codominant_pvalue = ATE_EM_pvalue,
+                      MOR_codominant_F_statistic = MOR_EM_F_statistic,
+                      MOR_codominant_pvalue = MOR_EM_pvalue,
+                      ATE_additive_baseline_est = ATE_EM_lin_baseline_est,
+                      ATE_additive_lin_est = ATE_EM_lin_est,
+                      ATE_additive_Z_stat = ATE_EM_lin_Z_stat,
+                      ATE_additive_pvalue = ATE_EM_lin_pvalue,
+                      MOR_additive_baseline_est = MOR_EM_mult_baseline_est,
+                      MOR_additive_mult_est = MOR_EM_mult_est,
+                      MOR_additive_Z_stat = MOR_EM_mult_Z_stat,
+                      MOR_additive_pvalue = MOR_EM_mult_pvalue)
   }else
   {
     result_vector = c(ATE_G0 = tmle_E0$ATE %>% as.numeric,
@@ -269,7 +271,7 @@ linear_EM_test = function(m0, m1, m2, var_m0, var_m1, var_m2)
   lin_EM_pvalue = 2*pnorm(-1*abs(Z_EM), mean = 0, sd = 1)
 
   return(list(Z_stat = Z_EM, pvalue =  lin_EM_pvalue,
-         EM_hat = EM_hat, EM_lin_baseline = EM_lin_baseline))
+              EM_hat = EM_hat, EM_lin_baseline = EM_lin_baseline))
 }
 
 welch_anova = function(means, var_means, sample_sizes)

@@ -134,15 +134,15 @@ compute_Superlearner = function(outcome_data, train_ids, test_ids, obs.weights, 
   Y_test = outcome_data[test_ids,1]
 
   suppressWarnings(Q0_mod <- SuperLearner::SuperLearner(Y = Y, X = X,
-                                          newX = NULL,
-                                          family = family,
-                                          SL.library = outcome_SL.library,
-                                          method = "method.NNLS",
-                                          obsWeights = obs.weights[train_ids],
-                                          cvControl = outcome_SL.cvControl))
+                                                        newX = NULL,
+                                                        family = family,
+                                                        SL.library = outcome_SL.library,
+                                                        method = "method.NNLS",
+                                                        obsWeights = obs.weights[train_ids],
+                                                        cvControl = outcome_SL.cvControl))
 
 
-  Q0AW = stats::predict(Q0_mod, newx = X_test, type = "response", onlySL = TRUE)$pred %>% bound_limits(0,1)
+  Q0AW = stats::predict(Q0_mod, newx = X_test, onlySL = TRUE)$pred %>% bound_limits(0,1)
   Q1W = stats::predict(Q0_mod, newx = cbind(rep(1, nrow(X_test)), X_test[,-1]), onlySL = TRUE)$pred %>% bound_limits(0,1)
   Q0W = stats::predict(Q0_mod, newx = cbind(rep(0, nrow(X_test)), X_test[,-1]), onlySL = TRUE)$pred %>% bound_limits(0,1)
   return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
@@ -159,82 +159,96 @@ generate_Q0_cv = function(outcome_data, family, obs.weights, alpha = 0.5, lambda
                           outcome_SL.cvControl = NULL,
                           type.measure = "deviance")
 {
-  # initialize CV splits
+  return_list = NULL
+  # if no confounders specified in outcome model -- can only happen if include_W_outcome and include_G_outcome are both FALSE.
+  if(ncol(outcome_data) == 2)
+  {
+    glm_mod = stats::glm(Y ~ A, data = outcome_data, family = "binomial", weights = obs.weights)
+    Q0AW = stats::predict(glm_mod, type = "response")
 
-  # use factor call for stratified CV
-  folds = NULL
-  if(family == "gaussian") # do not create splits based on factor
-  {
-    folds = caret::createFolds(outcome_data$Y, k = nfolds_cv_Q_init)
-  }else
-  {
-    # note that the cross validation folds are stratified by both outcome and and exposure status
-    stratification_var = interaction(outcome_data$Y, outcome_data$A)
-    folds = caret::createFolds(stratification_var, k = nfolds_cv_Q_init)
+    # Counterfactual predictions
+    Q1W = stats::predict(glm_mod, newdata = transform(outcome_data, A = 1), type = "response")
+    Q0W = stats::predict(glm_mod, newdata = transform(outcome_data, A = 0), type = "response")
+
+    return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
   }
-
-  if(outcome_method != "SL")
+  else
   {
-    # since we use logistic fluctuation, family is always binomial
-    # note that we use `binomial` and not `"binomial"`, the former works and the
-    # latter does not with a bounded continuous outcome in (0,1), I think cause it
-    # calls binomial function in R and the other might be an implementation in glmnet
+    # initialize CV splits
 
-    # we make the condition whether the SL is being called because
-    # super learner did not work when using probability outcome with binomial family
-
-    family = stats::binomial
-
-  }
-
-  args_list = list(family = family,
-                   alpha = alpha,
-                   lambda = lambda,
-                   nfolds_cv_glmnet = nfolds_cv_glmnet,
-                   type.measure = type.measure,
-                   outcome_SL.library = outcome_SL.library,
-                   outcome_SL.cvControl = outcome_SL.cvControl)
-
-  outcome_function = switch(outcome_method,
-                            glmnet = compute_glmnet,
-                            glmnet_int = compute_glmnet_interaction,
-                            gesso = compute_gesso,
-                            SL = compute_Superlearner
-  )
-
-  results = lapply(1:length(folds), FUN = function(i)
-  {
-
-    train_ids = (1:nrow(outcome_data))[-folds[[i]]]
-    test_ids = folds[[i]]
-    if(nfolds_cv_Q_init == 1)
+    # use factor call for stratified CV
+    folds = NULL
+    if(family == "gaussian") # do not create splits based on factor
     {
-      train_ids = test_ids
+      folds = caret::createFolds(outcome_data$Y, k = nfolds_cv_Q_init)
+    }else
+    {
+      # note that the cross validation folds are stratified by both outcome and and exposure status
+      stratification_var = interaction(outcome_data$Y, outcome_data$A)
+      folds = caret::createFolds(stratification_var, k = nfolds_cv_Q_init)
     }
 
-    return_list = outcome_function(outcome_data = outcome_data, train_ids = train_ids,
-                                   test_ids = test_ids, obs.weights = obs.weights,
-                                   args_list = args_list)
+    if(outcome_method != "SL")
+    {
+      # since we use logistic fluctuation, family is always binomial
+      # note that we use `binomial` and not `"binomial"`, the former works and the
+      # latter does not with a bounded continuous outcome in (0,1), I think cause it
+      # calls binomial function in R and the other might be an implementation in glmnet
 
-    return(return_list)
+      # we make the condition whether the SL is being called because
+      # super learner did not work when using probability outcome with binomial family
 
-  })
+      family = stats::binomial
 
-  # put predictions in order
+    }
 
-  fold_ids = do.call(c, folds)
-  order_obs = order(fold_ids)
+    args_list = list(family = family,
+                     alpha = alpha,
+                     lambda = lambda,
+                     nfolds_cv_glmnet = nfolds_cv_glmnet,
+                     type.measure = type.measure,
+                     outcome_SL.library = outcome_SL.library,
+                     outcome_SL.cvControl = outcome_SL.cvControl)
 
-  Q0AW = do.call(c, lapply(results, "[[", 1) )
-  Q0AW = Q0AW[order_obs]
+    outcome_function = switch(outcome_method,
+                              glmnet = compute_glmnet,
+                              glmnet_int = compute_glmnet_interaction,
+                              gesso = compute_gesso,
+                              SL = compute_Superlearner
+    )
 
-  Q1W = do.call(c, lapply(results, "[[", 2))
-  Q1W = Q1W[order_obs]
+    results = lapply(1:length(folds), FUN = function(i)
+    {
 
-  Q0W = do.call(c, lapply(results, "[[", 3))
-  Q0W = Q0W[order_obs]
+      train_ids = (1:nrow(outcome_data))[-folds[[i]]]
+      test_ids = folds[[i]]
+      if(nfolds_cv_Q_init == 1)
+      {
+        train_ids = test_ids
+      }
 
-  return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
+      return_list = outcome_function(outcome_data = outcome_data, train_ids = train_ids,
+                                     test_ids = test_ids, obs.weights = obs.weights,
+                                     args_list = args_list)
 
+      return(return_list)
+
+    })
+
+    # put predictions in order
+
+    fold_ids = do.call(c, folds)
+    order_obs = order(fold_ids)
+
+    Q0AW = do.call(c, lapply(results, "[[", 1) )
+    Q0AW = Q0AW[order_obs]
+
+    Q1W = do.call(c, lapply(results, "[[", 2))
+    Q1W = Q1W[order_obs]
+
+    Q0W = do.call(c, lapply(results, "[[", 3))
+    Q0W = Q0W[order_obs]
+    return_list = list(Q0AW = Q0AW, Q1W = Q1W, Q0W = Q0W)
+  }
   return(return_list)
 }

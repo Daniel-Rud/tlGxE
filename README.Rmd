@@ -34,7 +34,7 @@ devtools::install_github("Daniel-Rud/tlGxE")
 
 # Example 
 
-We will illustrate several examples of `tlGxE` using binary outcome, where causal effect modification in both the ATE and MOR scales is assessed.  For continuous outcomes, `tlGxE` assesses causal effect modification only in the scale of the ATE.  
+We will illustrate several examples of `tlGxE` using a binary outcome, where causal effect modification in both the ATE and MOR scales is assessed.  For continuous outcomes, `tlGxE` assesses causal effect modification only in the scale of the ATE.  
 
 ## Data Generation 
 For our purpose, we will generate a set of 10 SNPs all having minor allele frequency of MAF = 0.3.  In addition, we will specify an exposure variable `E` that depends on three confounders `age`, `sex`, `cohort` such that the overall propensity of exposure is close to 0.5.  Finally, we can specify an outcome model that includes the interaction between the first SNP and `A`, as well as adjusting for the other confounders. The outcome prevalence in this case is around 0.34.  
@@ -264,7 +264,7 @@ We can plot the `global_propensity_scores` as follows:
 Generally, a global propensity score distribution that is uni-modal and without heavy tails at the extremes (< 0.1 and > 0.9) indicate adherence to the positivity assumption.  Internally, `tlGxE` screens for positivity violators (observations with global propensity scores at the extreme of the distribution) and can get by when few near positivity violators are present (say, less than 5-10% of the data).  There are two ways by which positivity violators can be dealt with that can be found in the `near_positivity_method` within the `TMLE_args_list` parameter: 
 
 * `trim`: (Default) Excludes observations from analysis that have global propensity score less than `npv_thresh` or greater than '1 - npv_thresh' (`npv_thresh` also found in `TMLE_args_list`).
-* `rebound``: Set global propensity scores of observations that have global propensity score less than `npv_thresh` or greater than '1 - npv_thresh' to the bounds `npv_thresh` or '1 - npv_thresh', respectively.
+* `rebound`: Set global propensity scores of observations that have global propensity score less than `npv_thresh` or greater than '1 - npv_thresh' to the bounds `npv_thresh` or '1 - npv_thresh', respectively.
 
 In simulation, we found `trim` to better preserve type 1 error and estimate causal effects in situations with near-positivity violations, and hence is set as the default near positivity violator method. 
 
@@ -281,6 +281,8 @@ SuperLearner::listWrappers()
 Let us specify our global propensity model to include \{`SL.glmnet`, `SL.rpart`, `SL.bartMachine`, `SL.glm`\} and our outcome model to include \{`SL.glmnet`, `SL.gam` \}.  In addition, we will specify the following choices:
 
 * `include_G_propensity = T`: We will include all SNPs in G into the estimation of the global propensity model (default only considers including the confounders in W).  One of the considerations whether we would like to include `G` in the propensity is that if `G` is high dimensional, we will need to use learners that can accommodate `G`'s size.  If we rely on the *doubly robustness* property of targeted maximum likelihood estimation and choose simpler adjustments for including `G` in the outcome model, we can specify a more data adaptive propensity model that better estimates the exposure mechanism as a function of just the confounders in `W`.  This is a tradeoff of course, and the user is welcome to specify accordingly to their desired analysis. 
+
+* `include_G_outcome = T`: We will include all SNPs in G, aside from the current iterated SNP, into the iterated outcome models.  One of the considerations whether we would like to include `G` in the outcome modeling is that if `G` is high dimensional, we will need to use learners that can accommodate `G`'s size.  By default, `tlGxE` sets `include_G_outcome = T` and uses the computationally efficient `outcome_method = 'glmnet'` option for the iterated outcome model.
 * `include_W_outcome = T`: We will include all confounders in the outcome model.  This option can be set to false if we only wish to include the confounder adjustment in the propensity model, which can be done by leveraging the *doubly robustness* property of targeted maximum likelihood estimation.  The default is set to `TRUE`, since the confounder set is generally small in comparison to `G`, which can be large.  The advantage of including `W` in the outcome model is that we will have two chances to correctly specify the confounder-exposure or confounder-outcome mechanisms (if either correct, we will have unbiased estimation).  
 * `SNP_results = 1:3`:  We choose to only perform the scan for the first 3 SNPs.  Still, all SNPs in G (aside for the current SNP) are adjusted for in the estimation; however, column indices of `G` not included in `SNP_results` will not have `tlGxE` iterated over it.  
 
@@ -288,12 +290,13 @@ Let us specify our global propensity model to include \{`SL.glmnet`, `SL.rpart`,
 tlGxE_2 = tlGxE(Y = outcome_data$Y, E = outcome_data$E, G = outcome_data[,3:12], 
                 W = W, 
                 family = "binomial", 
-                TMLE_args_list = list(outcome_method = c("SL"),
+                TMLE_args_list = list(outcome_method = c("glmnet"),
                                       outcome_SL.library = c("SL.glmnet",
                                                              "SL.gam")),
                 propensity_SL.library = c("SL.glmnet", "SL.rpart",
                                           "SL.bartMachine", "SL.glm"), 
                 include_G_propensity = T,
+                include_G_outcome = T, 
                 include_W_outcome = T, 
                 SNP_results = 1:3)
 
@@ -305,11 +308,9 @@ plot(tlGxE_2, alpha = alpha)
 
 If the user has a good understanding of either or both of the exposure and outcome mechanisms, they can supply the functional relationship using model formulas.  We provide arguments to supply the functional relationships, that can include standard transformations that can be accommodated in a `glm` call in R (essentially anything model.matrix can process).  Below, find some  notes for the formula specifications: 
 
-* `propensity_formula`: In this formula, we can include any columns from W or G.  **AN IMPORTANT NOTE:** The left hand side of the equation should reference the exposure as the name `E` **irregardless** of the name of `E`.  This is because the `E` vector, even if passed as `E = exposure`, is internally referenced using the variable `E`.  In addition, if we wish to reference elements of `W` and `G`, we must ensure that both `W` and `G` have appropriate column names that can be referenced.  For example, see below how we name the SNPs in `G` as S1-S10, and include S10 in the propensity model.  Because the propensity model, if specifified with `propensity_formula`, is fitted using a standard `glm`, one must ensure that there is sufficient observations for number of features. 
+* `propensity_formula`: In this formula, we can include any columns from W or G.  **AN IMPORTANT NOTE:** The left hand side of the equation should reference the exposure as the name `E` **irregardless** of the name of `E`.  This is because the `E` vector, even if passed as `E = exposure`, is internally referenced using the variable `E`.  In addition, if we wish to reference elements of `W` and `G`, we must ensure that both `W` and `G` have appropriate column names that can be referenced.  For example, recall that we named the SNPs in `G` as S1-S10, and include S8 and S10 in the propensity model.  Because the propensity model, if specified with `propensity_formula`, is fitted using a standard `glm`, one must ensure that there is sufficient observations for number of features. 
 
-* `outcome_formula`: In this formula, we can include columns from `G` and columns from `W` (*IF* `include_W_outcome = T`).  If we do want to specify an outcome formula, we must be very careful about including specific SNPs in the outcome model.  This is because we do not want to include a SNP as a covariate that we will be iterating `tlGxE` over.  Therefore, we advise adjusting for SNPs in the general outcome model that are **NOT** included for analysis, as determined by the `SNP_results` variable.  See the example below, where we only perform the analysis on SNPs 1-3, and include SNP 10 as an adjustment in the outcome model.  Again,  when referring to elements of `W` and `G` in the model formula, we must ensure that both `W` and `G` have appropriate column names that can be referenced.
-
-**IMPORTANT NOTE**: when specifying the outcome model, **irregardless** of the naming of ones outcome and exposure corresponding to `Y` and `E` respectively, the outcome formula must always have the left hand side as `Y` and the first term in the right hand side as the exposure `E`.  This is needed due to how `tlGxE` internally references these variables.  See below a specification of the outcome formula.  
+* `outcome_formula`: In this formula, we can include columns from `G` and columns from `W` (*IF* `include_W_outcome = T`).  If we do want to specify an outcome formula, we must be very careful about including specific SNPs in the outcome model.  This is because we do not want to include a SNP as a covariate that we will be iterating `tlGxE` over.  Therefore, we advise adjusting for SNPs in the general outcome model that are **NOT** included for analysis, as determined by the `SNP_results` variable.  See the example below, where we only perform the analysis on SNPs 1-3, and include SNP 10 as an adjustment in the outcome model.  Again,  when referring to elements of `W` and `G` in the model formula, we must ensure that both `W` and `G` have appropriate column names that can be referenced. **IMPORTANT NOTE**: when specifying the outcome model, **irregardless** of the naming of ones outcome and exposure corresponding to `Y` and `E` respectively, the outcome formula must always have the left hand side as `Y` and the first term in the right hand side as the exposure `E`.  This is needed due to how `tlGxE` internally references these variables.  See below a specification of the outcome formula.  
 
 
 
@@ -320,6 +321,7 @@ tlGxE_3 = tlGxE(Y = outcome_data$Y, E = outcome_data$E, G = outcome_data[,3:12],
                 propensity_formula = E ~ I(log(age)) + sex + cohort2 + cohort3 + cohort4 + S10, 
                 outcome_formula = Y ~  E + age + sex + cohort2 + cohort3 + cohort4 + I(S8^2) + S10,
                 include_G_propensity = T,
+                include_G_outcome = T, 
                 include_W_outcome = T, 
                 SNP_results = 1:3)
 alpha = 0.05/10

@@ -35,9 +35,9 @@ devtools::install_github("Daniel-Rud/tlGxE")
 #> Downloading GitHub repo Daniel-Rud/tlGxE@HEAD
 #> 
 #> ── R CMD build ─────────────────────────────────────────────────────────────────
-#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpULqeke/remotesf7652b73c7d8/Daniel-Rud-tlGxE-54a1c63/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpULqeke/remotesf7652b73c7d8/Daniel-Rud-tlGxE-54a1c63/DESCRIPTION’
+#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpyvkXND/remotes1379b197f8c1e/Daniel-Rud-tlGxE-5175bd5/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpyvkXND/remotes1379b197f8c1e/Daniel-Rud-tlGxE-5175bd5/DESCRIPTION’
 #>   ─  preparing ‘tlGxE’:
-#>    checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
+#>      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
 #>   ─  checking for LF line-endings in source and make files and shell scripts
 #>   ─  checking for empty or unneeded directories
 #>    Omitted ‘LazyData’ from DESCRIPTION
@@ -48,7 +48,7 @@ devtools::install_github("Daniel-Rud/tlGxE")
 
 # Example
 
-We will illustrate several examples of `tlGxE` using binary outcome,
+We will illustrate several examples of `tlGxE` using a binary outcome,
 where causal effect modification in both the ATE and MOR scales is
 assessed. For continuous outcomes, `tlGxE` assesses causal effect
 modification only in the scale of the ATE.
@@ -410,8 +410,10 @@ in the `near_positivity_method` within the `TMLE_args_list` parameter:
 - `trim`: (Default) Excludes observations from analysis that have global
   propensity score less than `npv_thresh` or greater than ‘1 -
   npv_thresh’ (`npv_thresh` also found in `TMLE_args_list`).
-- ``` rebound``: Set global propensity scores of observations that have global propensity score less than ```npv_thresh`or greater than '1 - npv_thresh' to the bounds`npv_thresh\`
-  or ‘1 - npv_thresh’, respectively.
+- `rebound`: Set global propensity scores of observations that have
+  global propensity score less than `npv_thresh` or greater than ‘1 -
+  npv_thresh’ to the bounds `npv_thresh` or ‘1 - npv_thresh’,
+  respectively.
 
 In simulation, we found `trim` to better preserve type 1 error and
 estimate causal effects in situations with near-positivity violations,
@@ -478,6 +480,15 @@ choices:
   as a function of just the confounders in `W`. This is a tradeoff of
   course, and the user is welcome to specify accordingly to their
   desired analysis.
+
+- `include_G_outcome = T`: We will include all SNPs in G, aside from the
+  current iterated SNP, into the iterated outcome models. One of the
+  considerations whether we would like to include `G` in the outcome
+  modeling is that if `G` is high dimensional, we will need to use
+  learners that can accommodate `G`’s size. By default, `tlGxE` sets
+  `include_G_outcome = T` and uses the computationally efficient
+  `outcome_method = 'glmnet'` option for the iterated outcome model.
+
 - `include_W_outcome = T`: We will include all confounders in the
   outcome model. This option can be set to false if we only wish to
   include the confounder adjustment in the propensity model, which can
@@ -488,6 +499,7 @@ choices:
   will have two chances to correctly specify the confounder-exposure or
   confounder-outcome mechanisms (if either correct, we will have
   unbiased estimation).  
+
 - `SNP_results = 1:3`: We choose to only perform the scan for the first
   3 SNPs. Still, all SNPs in G (aside for the current SNP) are adjusted
   for in the estimation; however, column indices of `G` not included in
@@ -497,12 +509,13 @@ choices:
 tlGxE_2 = tlGxE(Y = outcome_data$Y, E = outcome_data$E, G = outcome_data[,3:12], 
                 W = W, 
                 family = "binomial", 
-                TMLE_args_list = list(outcome_method = c("SL"),
+                TMLE_args_list = list(outcome_method = c("glmnet"),
                                       outcome_SL.library = c("SL.glmnet",
                                                              "SL.gam")),
                 propensity_SL.library = c("SL.glmnet", "SL.rpart",
                                           "SL.bartMachine", "SL.glm"), 
                 include_G_propensity = T,
+                include_G_outcome = T, 
                 include_W_outcome = T, 
                 SNP_results = 1:3)
 #> Fitting global propensity model using SuperLearner...
@@ -531,9 +544,9 @@ process). Below, find some notes for the formula specifications:
   `E = exposure`, is internally referenced using the variable `E`. In
   addition, if we wish to reference elements of `W` and `G`, we must
   ensure that both `W` and `G` have appropriate column names that can be
-  referenced. For example, see below how we name the SNPs in `G` as
-  S1-S10, and include S10 in the propensity model. Because the
-  propensity model, if specifified with `propensity_formula`, is fitted
+  referenced. For example, recall that we named the SNPs in `G` as
+  S1-S10, and include S8 and S10 in the propensity model. Because the
+  propensity model, if specified with `propensity_formula`, is fitted
   using a standard `glm`, one must ensure that there is sufficient
   observations for number of features.
 
@@ -548,14 +561,13 @@ process). Below, find some notes for the formula specifications:
   the analysis on SNPs 1-3, and include SNP 10 as an adjustment in the
   outcome model. Again, when referring to elements of `W` and `G` in the
   model formula, we must ensure that both `W` and `G` have appropriate
-  column names that can be referenced.
-
-**IMPORTANT NOTE**: when specifying the outcome model, **irregardless**
-of the naming of ones outcome and exposure corresponding to `Y` and `E`
-respectively, the outcome formula must always have the left hand side as
-`Y` and the first term in the right hand side as the exposure `E`. This
-is needed due to how `tlGxE` internally references these variables. See
-below a specification of the outcome formula.
+  column names that can be referenced. **IMPORTANT NOTE**: when
+  specifying the outcome model, **irregardless** of the naming of ones
+  outcome and exposure corresponding to `Y` and `E` respectively, the
+  outcome formula must always have the left hand side as `Y` and the
+  first term in the right hand side as the exposure `E`. This is needed
+  due to how `tlGxE` internally references these variables. See below a
+  specification of the outcome formula.
 
 ``` r
 tlGxE_3 = tlGxE(Y = outcome_data$Y, E = outcome_data$E, G = outcome_data[,3:12], 
@@ -564,6 +576,7 @@ tlGxE_3 = tlGxE(Y = outcome_data$Y, E = outcome_data$E, G = outcome_data[,3:12],
                 propensity_formula = E ~ I(log(age)) + sex + cohort2 + cohort3 + cohort4 + S10, 
                 outcome_formula = Y ~  E + age + sex + cohort2 + cohort3 + cohort4 + I(S8^2) + S10,
                 include_G_propensity = T,
+                include_G_outcome = T, 
                 include_W_outcome = T, 
                 SNP_results = 1:3)
 #> Iterating tlGxE over SNPs in G...

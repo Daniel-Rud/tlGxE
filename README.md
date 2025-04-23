@@ -35,7 +35,7 @@ devtools::install_github("Daniel-Rud/tlGxE")
 #> Downloading GitHub repo Daniel-Rud/tlGxE@HEAD
 #> 
 #> ── R CMD build ─────────────────────────────────────────────────────────────────
-#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpTHtoCy/remotes146311e3c1d49/Daniel-Rud-tlGxE-f2c12cb/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpTHtoCy/remotes146311e3c1d49/Daniel-Rud-tlGxE-f2c12cb/DESCRIPTION’
+#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/Rtmp8WdBzg/remotes14c4561abc36c/Daniel-Rud-tlGxE-df53f69/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/Rtmp8WdBzg/remotes14c4561abc36c/Daniel-Rud-tlGxE-df53f69/DESCRIPTION’
 #>   ─  preparing ‘tlGxE’:
 #>      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
 #>   ─  checking for LF line-endings in source and make files and shell scripts
@@ -60,7 +60,7 @@ allele frequency of MAF = 0.3. In addition, we will specify an exposure
 variable `E` that depends on three confounders `age`, `sex`, `cohort`
 such that the overall propensity of exposure is close to 0.5. Finally,
 we can specify an outcome model that includes the interaction between
-the first SNP and `A`, as well as adjusting for the other confounders.
+the first SNP and `E`, as well as adjusting for the other confounders.
 The outcome prevalence in this case is around 0.34.
 
 ``` r

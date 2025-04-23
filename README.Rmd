@@ -37,7 +37,7 @@ devtools::install_github("Daniel-Rud/tlGxE")
 We will illustrate several examples of `tlGxE` using a binary outcome, where causal effect modification in both the ATE and MOR scales is assessed.  For continuous outcomes, `tlGxE` assesses causal effect modification only in the scale of the ATE.  
 
 ## Data Generation 
-For our purpose, we will generate a set of 10 SNPs all having minor allele frequency of MAF = 0.3.  In addition, we will specify an exposure variable `E` that depends on three confounders `age`, `sex`, `cohort` such that the overall propensity of exposure is close to 0.5.  Finally, we can specify an outcome model that includes the interaction between the first SNP and `A`, as well as adjusting for the other confounders. The outcome prevalence in this case is around 0.34.  
+For our purpose, we will generate a set of 10 SNPs all having minor allele frequency of MAF = 0.3.  In addition, we will specify an exposure variable `E` that depends on three confounders `age`, `sex`, `cohort` such that the overall propensity of exposure is close to 0.5.  Finally, we can specify an outcome model that includes the interaction between the first SNP and `E`, as well as adjusting for the other confounders. The outcome prevalence in this case is around 0.34.  
 
 
 ```{r}
